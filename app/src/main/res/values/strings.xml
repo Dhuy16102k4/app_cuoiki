@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">water-app</string>
+    <string-array name="health_conditions">
+        <item>Thông thường</item>
+        <item>Người tập gym</item>
+        <item>Phụ nữ mang thai</item>
+        <item>Người cao tuổi</item>
+    </string-array>
+</resources>
