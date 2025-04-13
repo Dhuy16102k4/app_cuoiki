@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape>
+            <solid android:color="#33FFFFFF" /> <!-- Màu trắng mờ khi chạm -->
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape>
+            <solid android:color="#1AFFFFFF" /> <!-- Màu trắng rất mờ khi focus -->
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <solid android:color="@android:color/transparent" /> <!-- Trong suốt mặc định -->
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+</selector>

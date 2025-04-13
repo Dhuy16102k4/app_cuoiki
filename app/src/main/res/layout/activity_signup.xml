@@ -4,73 +4,178 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@drawable/background"
-    >
+    android:background="@drawable/background5"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="16dp">
 
         <ImageView
             android:id="@+id/imageView2"
-            android:layout_width="match_parent"
-            android:layout_height="124dp"
+            android:layout_width="262dp"
+            android:layout_height="92dp"
             app:srcCompat="@drawable/ic_menu_icon" />
 
-        <EditText
-            android:id="@+id/emailInput"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/emailInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
             android:hint="Email"
-            android:inputType="textEmailAddress" />
+            app:boxStrokeColor="@android:color/white"
+            app:hintTextColor="@android:color/white"
+            android:textColorHint="@android:color/white">
 
-        <EditText
-            android:id="@+id/passwordInput"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/emailInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textEmailAddress"
+                android:textColor="@android:color/white"
+                android:contentDescription="Nhập email của bạn" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/passwordInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             android:hint="Mật khẩu"
-            android:inputType="textPassword" />
+            app:boxStrokeColor="@android:color/white"
+            app:hintTextColor="@android:color/white"
+            app:passwordToggleEnabled="true"
+            android:textColorHint="@android:color/white">
 
-        <EditText
-            android:id="@+id/confirmPasswordInput"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/passwordInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:textColor="@android:color/white"
+                android:contentDescription="Nhập mật khẩu của bạn" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/confirmPasswordInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             android:hint="Xác nhận mật khẩu"
-            android:inputType="textPassword" />
+            app:boxStrokeColor="@android:color/white"
+            app:hintTextColor="@android:color/white"
+            app:passwordToggleEnabled="true"
+            android:textColorHint="@android:color/white">
 
-        <EditText
-            android:id="@+id/weightInput"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/confirmPasswordInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:textColor="@android:color/white"
+                android:contentDescription="Xác nhận mật khẩu của bạn" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/weightInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:hint="Cân nặng (kg)"
-            android:inputType="numberDecimal" />
+            android:layout_marginBottom="8dp"
+            android:hint="Cân nặng"
+            app:boxStrokeColor="@android:color/white"
+            app:hintTextColor="@android:color/white"
+            app:suffixText="kg"
+            app:suffixTextColor="@android:color/white"
+            android:textColorHint="@android:color/white">
 
-        <EditText
-            android:id="@+id/heightInput"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/weightInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:textColor="@android:color/white"
+                android:contentDescription="Nhập cân nặng của bạn" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/heightInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:hint="Chiều cao (cm)"
-            android:inputType="number" />
+            android:layout_marginBottom="8dp"
+            android:hint="Chiều cao"
+            app:boxStrokeColor="@android:color/white"
+            app:hintTextColor="@android:color/white"
+            app:suffixText="m"
+            app:suffixTextColor="@android:color/white"
+            app:helperText="Nhập số nguyên (ví dụ: 175 cho 1.75 m)"
+            app:helperTextTextColor="@android:color/white"
+            android:textColorHint="@android:color/white">
 
-        <Spinner
-            android:id="@+id/healthConditionSpinner"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/heightInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+            android:textColor="@android:color/white"
+            android:contentDescription="Nhập chiều cao của bạn" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:id="@+id/healthConditionSpinnerLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="16dp"
+            android:hint="Tình trạng sức khỏe"
+            app:boxStrokeColor="@android:color/white"
+            app:hintTextColor="@android:color/white"
+            android:textColorHint="@android:color/white">
 
-        <Button
+            <AutoCompleteTextView
+                android:id="@+id/healthConditionSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:textColor="@android:color/white"
+                android:background="@null"
+                android:contentDescription="Chọn tình trạng sức khỏe" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/signupButton"
+            style="@style/Widget.MaterialComponents.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:backgroundTint="#2196F3"
+            android:layout_marginTop="16dp"
             android:text="Đăng ký"
-            android:textColor="#FFFFFF" />
+            android:textColor="@android:color/black"
+            app:backgroundTint="#FFC107"
+            app:cornerRadius="8dp"
+            app:rippleColor="@android:color/white"
+            android:contentDescription="Nút đăng ký" />
+
+        <TextView
+            android:id="@+id/backToLoginText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Quay lại đăng nhập"
+            android:textColor="@color/text_color_selector"
+            android:background="@drawable/background_selector"
+            android:padding="8dp"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="Quay lại trang đăng nhập" />
     </LinearLayout>
 </ScrollView>

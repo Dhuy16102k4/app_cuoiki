@@ -34,6 +34,7 @@ android {
 
 dependencies {
 
+    implementation(libs.material.v190)
     implementation(libs.firebase.analytics)
     implementation(platform(libs.firebase.bom))
     implementation(libs.appcompat)

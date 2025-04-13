@@ -3,49 +3,97 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
+    android:background="@drawable/background5"
     android:gravity="center"
-    android:background="@drawable/background">
+    android:orientation="vertical"
+    android:padding="10dp">
 
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="193dp"
         android:layout_height="121dp"
+        android:padding="10dp"
+        android:scaleType="centerCrop"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.Corner"
         app:srcCompat="@drawable/ic_menu_icon" />
 
-    <EditText
-        android:id="@+id/emailInput"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/emailInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Email"
-        android:inputType="textEmailAddress"/>
+        app:boxStrokeColor="@android:color/white"
+        app:hintTextColor="@android:color/white"
+        android:textColorHint="@android:color/white">
 
-    <EditText
-        android:id="@+id/passwordInput"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/emailInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textEmailAddress"
+            android:textColor="@android:color/white" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/passwordInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Mật khẩu"
-        android:inputType="textPassword"/>
+        app:boxStrokeColor="@android:color/white"
+        app:hintTextColor="@android:color/white"
+        app:passwordToggleEnabled="true"
+        android:textColorHint="@android:color/white">
 
-    <Button
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/passwordInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"
+            android:textColor="@android:color/white" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/loginButton"
+        style="@style/Widget.MaterialComponents.Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Đăng nhập"/>
+        android:layout_marginTop="16dp"
+        android:text="Đăng nhập"
+        android:textColor="@android:color/black"
+        app:backgroundTint="#FFC107"
+        app:cornerRadius="8dp"
+        app:rippleColor="@android:color/white" />
 
-    <Button
-        android:id="@+id/signupButton"
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/signupText"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Đăng ký"/>
+        android:layout_marginTop="16dp"
+        android:text="Nếu bạn chưa có tài khoản, hãy đăng ký tại đây"
+        android:textColor="@color/text_color_selector"
+        android:background="@drawable/background_selector"
+        android:padding="8dp"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Chuyển đến trang đăng ký" />
 
     <TextView
         android:id="@+id/forgotPasswordText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
         android:text="Quên mật khẩu?"
-        android:textColor="@android:color/holo_blue_dark"
-        android:layout_marginTop="8dp"/>
+        android:textColor="@color/forgot_password_text_color_selector"
+        android:background="@drawable/background_selector"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Chuyển đến trang quên mật khẩu" />
 
 </LinearLayout>

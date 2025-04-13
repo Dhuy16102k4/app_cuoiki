@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.water_app.auth.EditProfileActivity;
-import com.example.water_app.auth.LoginActivity; // Activity đăng nhập
+import com.example.water_app.auth.LoginActivity; // Activity đăng nhập`
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
