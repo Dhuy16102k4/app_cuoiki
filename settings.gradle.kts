@@ -20,5 +20,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "water-app"
-include(":app")
- 
+include(":app", ":mylibrary")

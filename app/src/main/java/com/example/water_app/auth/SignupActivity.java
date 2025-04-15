@@ -77,10 +77,10 @@ public class SignupActivity extends AppCompatActivity {
                         int rawHeight = Integer.parseInt(cleanInput);
                         if (rawHeight >= 50 && rawHeight <= 300) { // 50 cm to 300 cm
                             double formattedHeight = rawHeight / 100.0;
-                            String formatted = String.format("%.2f", formattedHeight); // e.g., "1.75"
+                            String formatted = String.format("%.2f", formattedHeight);
                             if (!input.equals(formatted)) {
                                 heightInput.setText(formatted);
-                                heightInput.setSelection(formatted.length()); // Move cursor to end
+                                heightInput.setSelection(formatted.length());
                             }
                         }
                     } catch (NumberFormatException e) {

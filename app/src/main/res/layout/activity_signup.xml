@@ -116,7 +116,7 @@
             app:hintTextColor="@android:color/white"
             app:suffixText="m"
             app:suffixTextColor="@android:color/white"
-            app:helperText="Nhập số nguyên (ví dụ: 175 cho 1.75 m)"
+
             app:helperTextTextColor="@android:color/white"
             android:textColorHint="@android:color/white">
 

@@ -1,34 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
-    app:layout_anchorGravity="center">
+    android:background="@drawable/background5">
 
-    <!-- Tiêu đề -->
-
-    <!-- ScrollView để chứa các trường thông tin -->
-
+    <!-- Title -->
     <TextView
         android:id="@+id/profileTitle"
-        android:layout_width="190dp"
-        android:layout_height="76dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="36dp"
+        android:layout_marginHorizontal="16dp"
         android:gravity="center"
         android:text="Thông tin cá nhân"
-        android:textColor="#212121"
+        android:textColor="#FFFFFF"
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- ScrollView for profile fields -->
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="16dp"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -40,117 +38,166 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Email -->
-
-            <ImageView
-                android:id="@+id/imageView6"
-                android:layout_width="371dp"
-                android:layout_height="wrap_content"
+            <!-- Profile Picture -->
+            <FrameLayout
+                android:layout_width="120dp"
+                android:layout_height="120dp"
                 android:layout_gravity="center"
-                tools:srcCompat="@tools:sample/avatars" />
+                android:layout_marginBottom="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Email"
-                android:textColor="#757575"
-                android:textSize="16sp" />
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/profileImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Ảnh hồ sơ"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_menu_icon"
+                    app:shapeAppearanceOverlay="@style/CircleImageStyle" />
 
-            <TextView
-                android:id="@+id/emailInput"
+                <ImageView
+                    android:id="@+id/editProfileImage"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="bottom|end"
+                    android:contentDescription="Chỉnh sửa ảnh hồ sơ"
+                    android:src="@drawable/ic_edit"
+                    android:background="@drawable/circle_background"
+                    android:padding="4dp"
+                    app:tint="#FFFFFF" />
+            </FrameLayout>
+
+            <!-- Email -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:hint="Email"
-                android:textColor="#212121"
-                android:textSize="16sp" />
+                app:boxStrokeColor="#B0BEC5"
+                app:hintTextColor="#B0BEC5">
 
-            <!-- Cân nặng -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Cân nặng (kg)"
-                android:textColor="#757575"
-                android:textSize="16sp" />
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/emailInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Email của bạn"
+                    android:enabled="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <EditText
-                android:id="@+id/weightInput"
+            <!-- Weight -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:hint="Cân nặng (kg)"
-                android:inputType="numberDecimal" />
+                android:hint="Cân nặng"
+                app:boxStrokeColor="#B0BEC5"
+                app:hintTextColor="#B0BEC5"
+                app:suffixText="kg"
+                app:suffixTextColor="#B0BEC5">
 
-            <!-- Chiều cao -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Chiều cao (cm)"
-                android:textColor="#757575"
-                android:textSize="16sp" />
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/weightInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:contentDescription="Cân nặng của bạn" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <EditText
-                android:id="@+id/heightInput"
+            <!-- Height -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:hint="Chiều cao (cm)"
-                android:inputType="number" />
+                android:hint="Chiều cao"
+                app:boxStrokeColor="#B0BEC5"
+                app:hintTextColor="#B0BEC5"
+                app:suffixText="m"
+                app:suffixTextColor="#B0BEC5"
+                app:helperText="Nhập số nguyên (ví dụ: 175 cho 1.75 m)"
+                app:helperTextTextColor="#B0BEC5">
 
-            <!-- Tình trạng sức khỏe -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tình trạng sức khỏe"
-                android:textColor="#757575"
-                android:textSize="16sp" />
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/heightInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:contentDescription="Chiều cao của bạn" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <Spinner
-                android:id="@+id/healthConditionSpinner"
+            <!-- Health Condition -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp" />
+                android:layout_marginBottom="12dp"
+                android:hint="Tình trạng sức khỏe"
+                app:boxStrokeColor="#B0BEC5"
+                app:hintTextColor="#B0BEC5">
 
-            <!-- Mục tiêu lượng nước -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Mục tiêu lượng nước (ml)"
-                android:textColor="#757575"
-                android:textSize="16sp" />
+                <AutoCompleteTextView
+                    android:id="@+id/healthConditionSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:contentDescription="Tình trạng sức khỏe của bạn" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView
-                android:id="@+id/waterGoalText"
+            <!-- Water Goal -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:hint="Mục tiêu lượng nước"
-                android:textColor="#212121"
-                android:textSize="16sp" />
+                app:boxStrokeColor="#B0BEC5"
+                app:hintTextColor="#B0BEC5"
+                app:suffixText="ml"
+                app:suffixTextColor="#B0BEC5">
 
-            <!-- Nút cập nhật -->
-            <Button
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/waterGoalText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:contentDescription="Mục tiêu lượng nước của bạn" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Update Button -->
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/updateButton"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:backgroundTint="#2196F3"
                 android:text="Cập nhật"
-                android:textColor="#FFFFFF" />
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#4FC3F7"
+                app:cornerRadius="8dp"
+                android:contentDescription="Cập nhật thông tin" />
         </LinearLayout>
     </ScrollView>
 
-    <!-- BottomNavigationView -->
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
-        android:elevation="8dp"
         app:backgroundTint="#FFF4C5"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
