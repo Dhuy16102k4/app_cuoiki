@@ -3,21 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background">
+    android:background="@drawable/background5">
 
     <!-- Toolbar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="56dp"
-        android:background="#03A9F4"
-        android:elevation="4dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-        app:title="Water Reminder"
-        app:titleTextColor="#FFFFFF" /> <!-- Xóa app:menu="@menu/main_menu" -->
+        android:background="#01579B"
+    android:elevation="4dp"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+    app:title="Water Reminder"
+    app:titleTextColor="#FFFFFF" />
 
     <!-- Nội dung chính -->
     <LinearLayout
@@ -25,60 +25,81 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:orientation="vertical"
-        android:padding="30dp"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:padding="16dp"
+        android:background="@drawable/background5"
+    app:layout_constraintTop_toBottomOf="@id/toolbar"
+    app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Phần ProgressBar và thông tin -->
+    <!-- Phần ProgressBar và thông tin #0277BD-->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@android:color/transparent">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="16dp">
 
             <ImageView
                 android:id="@+id/imageView3"
-                android:layout_width="201dp"
+                android:layout_width="200dp"
                 android:layout_height="160dp"
-                android:layout_marginBottom="16dp"
-                app:srcCompat="@drawable/recycling_water" />
+                android:layout_marginBottom="12dp"
+                app:srcCompat="@drawable/icon_2" />
 
             <ProgressBar
                 android:id="@+id/waterProgressBar"
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
-                android:layout_height="24dp"
-                android:background="#27292F"
+                android:layout_height="28dp"
+                android:background="#0288D1"
                 android:max="100"
-                android:progress="0" />
+                android:progress="0"
+                android:progressBackgroundTint="#84D5DC"
+                android:progressTint="#4FC3F7">
+
+            </ProgressBar>
 
             <TextView
                 android:id="@+id/waterStatusText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:text="Đã uống: 0 ml / Còn thiếu: 2000 ml"
-                android:textSize="16sp" />
+                android:textColor="#FFFFFF"
+            android:textSize="16sp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/addWaterButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_marginTop="16dp"
-                android:backgroundTint="#2196F3"
-                android:text="Thêm nước" />
+                android:text="Thêm nước"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#01579B"
+            app:cornerRadius="8dp" />
         </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-        <!-- RecyclerView cho lịch sử uống nước -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/waterHistoryRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="16dp"
-            android:layout_weight="1" />
-    </LinearLayout>
+    <!-- RecyclerView cho lịch sử uống nước #0288D1-->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/waterHistoryRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1"
+        android:background="@drawable/background"
+    android:clipToPadding="false"
+    android:padding="8dp" />
+</LinearLayout>
 
     <!-- BottomNavigationView -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -86,11 +107,13 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#FFFFFF"
+        android:background="#01579B"
         android:elevation="8dp"
-        app:backgroundTint="#FFF4C5"
+        app:itemIconTint="@color/nav_item_tint"
+        app:itemTextColor="@color/nav_item_tint"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu" />
 
