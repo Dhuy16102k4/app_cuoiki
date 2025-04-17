@@ -40,8 +40,10 @@ public abstract class BaseActivity extends AppCompatActivity {
                     // TODO: Navigate to StatisticsActivity when implemented
                     return true;
                 } else if (itemId == R.id.nav_set_reminder) {
-                    Toast.makeText(this, "Mở cài đặt thời gian nhắc uống nước", Toast.LENGTH_SHORT).show();
-                    // TODO: Navigate to ReminderActivity when implemented
+                    if(!this.getClass().equals(ReminderActivity.class)) {
+                        Intent intent = new Intent(this, ReminderActivity.class);
+                        startActivity(intent);
+                    }
                     return true;
                 }
                 return false;
