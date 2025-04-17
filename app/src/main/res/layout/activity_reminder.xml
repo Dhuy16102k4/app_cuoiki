@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background5">
@@ -27,62 +26,137 @@
         android:layout_height="0dp"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="@drawable/background5"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
 
         <TextView
             android:id="@+id/reminderTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
+            android:layout_gravity="center_horizontal"
             android:text="Cài đặt nhắc nhở uống nước"
             android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:layout_gravity="center_horizontal" />
+            android:textSize="20sp" />
 
+        <!-- Khoảng thời gian nhắc nhở -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="#0277BD"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Khoảng thời gian nhắc nhở (phút)"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <SeekBar
+                    android:id="@+id/intervalSeekBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:max="11"
+                    android:progress="3"
+                    android:thumbTint="#4FC3F7"
+                    android:progressTint="#4FC3F7" />
+
+                <TextView
+                    android:id="@+id/intervalText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:text="60 phút"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Khung giờ hoạt động -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="#0277BD"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Khung giờ nhắc nhở"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/startTimeButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:backgroundTint="#01579B"
+                        android:text="8:00"
+                        android:textColor="#FFFFFF" />
+
+                    <Button
+                        android:id="@+id/endTimeButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:backgroundTint="#01579B"
+                        android:text="20:00"
+                        android:textColor="#FFFFFF" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Trạng thái nhắc nhở -->
         <TextView
-            android:id="@+id/intervalLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Khoảng thời gian nhắc (phút):"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:layout_gravity="center_horizontal" />
-
-        <EditText
-            android:id="@+id/intervalInput"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#FFFFFF"
-            android:gravity="center"
-            android:hint="Ví dụ: 30"
-            android:inputType="number"
-            android:minHeight="48dp"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#CCCCCC" />
-
-        <Button
-            android:id="@+id/setReminderButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Bắt đầu nhắc nhở"
-            android:layout_gravity="center_horizontal" />
-
-        <TextView
-            android:id="@+id/timeSelectedText"
+            android:id="@+id/reminderStatusText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Chưa cài đặt nhắc nhở"
+            android:layout_gravity="center_horizontal"
+            android:text="Chưa bật nhắc nhở"
             android:textColor="#FFFFFF"
-            android:layout_gravity="center_horizontal" />
+            android:textSize="16sp" />
+
+        <!-- Nút bật/tắt nhắc nhở -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toggleReminderButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_gravity="center_horizontal"
+            android:text="Bật nhắc nhở"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#4FC3F7"
+            app:cornerRadius="8dp" />
     </LinearLayout>
 
     <!-- BottomNavigationView -->
@@ -99,5 +173,4 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -3,6 +3,7 @@ package com.example.water_app;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends BaseActivity {
+    private static final String TAG = "MainActivity";
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private ProgressBar waterProgressBar;
@@ -47,6 +49,7 @@ public class MainActivity extends BaseActivity {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        // Kiểm tra đăng nhập
         if (auth.getCurrentUser() == null) {
             Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, LoginActivity.class));
@@ -54,6 +57,7 @@ public class MainActivity extends BaseActivity {
             return;
         }
 
+        // Thiết lập Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("Water Reminder");
         toolbar.setTitleTextColor(getResources().getColor(android.R.color.white));
@@ -76,18 +80,25 @@ public class MainActivity extends BaseActivity {
             return false;
         });
 
+        // Khởi tạo views
         waterProgressBar = findViewById(R.id.waterProgressBar);
         waterStatusText = findViewById(R.id.waterStatusText);
         addWaterButton = findViewById(R.id.addWaterButton);
         waterHistoryRecyclerView = findViewById(R.id.waterHistoryRecyclerView);
 
+        // Thiết lập RecyclerView
         waterHistoryRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         waterHistoryAdapter = new WaterHistoryAdapter();
         waterHistoryRecyclerView.setAdapter(waterHistoryAdapter);
 
+        // Thiết lập BottomNavigationView
+        setupBottomNavigation();
+
+        // Lấy dữ liệu
         fetchWaterGoal();
         fetchWaterHistory();
 
+        // Xử lý sự kiện thêm nước
         addWaterButton.setOnClickListener(v -> showAddWaterDialog());
     }
 
@@ -120,8 +131,6 @@ public class MainActivity extends BaseActivity {
 
     private void fetchWaterHistory() {
         String userId = auth.getCurrentUser().getUid();
-
-        // Lấy thời gian bắt đầu và kết thúc của ngày hiện tại
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
@@ -214,7 +223,6 @@ public class MainActivity extends BaseActivity {
         AlertDialog dialog = builder.create();
         confirmButton.setOnClickListener(v -> {
             String customAmount = customAmountInput.getText().toString().trim();
-
             if (!customAmount.isEmpty()) {
                 try {
                     selectedAmount[0] = Double.parseDouble(customAmount);
@@ -276,7 +284,6 @@ public class MainActivity extends BaseActivity {
     private void updateWaterStatus() {
         String status = String.format("Đã uống: %.0f ml / Còn thiếu: %.0f ml", drankWater, Math.max(0, waterGoal - drankWater));
         waterStatusText.setText(status);
-
         int progress = (int) ((drankWater / waterGoal) * 100);
         waterProgressBar.setProgress(Math.min(progress, 100));
     }

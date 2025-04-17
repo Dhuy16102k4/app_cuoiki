@@ -195,12 +195,13 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#1E1E1E"
+        android:background="#01579B"
         android:elevation="8dp"
         app:itemIconTint="@color/nav_item_tint"
         app:itemTextColor="@color/nav_item_tint"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu" />
 
