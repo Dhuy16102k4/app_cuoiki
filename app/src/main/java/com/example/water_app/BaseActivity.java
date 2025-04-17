@@ -14,20 +14,20 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Set the layout in the child activity before calling setContentView
+
     }
 
     protected void setupBottomNavigation() {
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         if (bottomNavigationView != null) {
-            // Highlight the correct menu item based on the current activity
+
             updateNavigationSelection();
 
-            // Set up navigation listener
+
             bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
                 int itemId = item.getItemId();
                 if (itemId == R.id.nav_home) {
-                    // Check if the current activity is NOT MainActivity
+
                     if (!this.getClass().equals(MainActivity.class)) {
                         Intent intent = new Intent(this, MainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
