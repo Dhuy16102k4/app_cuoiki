@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background5">
+    android:background="@drawable/background3">
 
     <!-- Toolbar -->
     <androidx.appcompat.widget.Toolbar
@@ -19,6 +20,7 @@
         app:title="Water Reminder Notifications"
         app:titleTextColor="#FFFFFF" />
 
+
     <!-- Nội dung chính -->
     <LinearLayout
         android:id="@+id/mainContent"
@@ -31,24 +33,34 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
 
+
+        <!-- Tiêu đề -->
         <TextView
             android:id="@+id/reminderTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
             android:text="Cài đặt nhắc nhở uống nước"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp" />
+            android:textColor="#100F0F"
+            android:textSize="22sp"
+            android:textStyle="bold" />
 
         <!-- Khoảng thời gian nhắc nhở -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardBackgroundColor="#0277BD"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/waterHistoryRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/waves"
+                android:clipToPadding="false"
+                android:padding="8dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -56,12 +68,29 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
+
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Khoảng thời gian nhắc nhở (phút)"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_alarm"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Khoảng thời gian (phút)"
+                        android:textColor="#EDEAEA"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
 
                 <SeekBar
                     android:id="@+id/intervalSeekBar"
@@ -70,8 +99,8 @@
                     android:layout_marginTop="8dp"
                     android:max="11"
                     android:progress="3"
-                    android:thumbTint="#4FC3F7"
-                    android:progressTint="#4FC3F7" />
+                    android:progressTint="#0C0C0F"
+                    android:thumbTint="#F4F2F2" />
 
                 <TextView
                     android:id="@+id/intervalText"
@@ -80,19 +109,28 @@
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="8dp"
                     android:text="60 phút"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp" />
+                    android:textColor="#075D85"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Khung giờ hoạt động -->
+        <!-- Khung giờ nhắc nhở -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardBackgroundColor="#0277BD"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/waterHistoryRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/waves"
+                android:clipToPadding="false"
+                android:padding="8dp"
+                tools:ignore="DuplicateIds" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -100,37 +138,53 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Khung giờ nhắc nhở"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_bell"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Khung giờ"
+                        android:textColor="#EEEFEF"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    tools:ignore="ExtraText">
 
-                    <Button
-                        android:id="@+id/startTimeButton"
+                    <!-- TimePicker cho giờ bắt đầu -->
+                    <android.widget.TimePicker
+                        android:id="@+id/startTimePicker"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:timePickerMode="spinner"
+                        android:textColor="#FFFFFF"/>  <!-- Màu chữ trắng -->/
+
+                    <!-- TimePicker cho giờ kết thúc -->
+                    <android.widget.TimePicker
+                        android:id="@+id/endTimePicker"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginEnd="4dp"
-                        android:backgroundTint="#01579B"
-                        android:text="8:00"
-                        android:textColor="#FFFFFF" />
-
-                    <Button
-                        android:id="@+id/endTimeButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:backgroundTint="#01579B"
-                        android:text="20:00"
-                        android:textColor="#FFFFFF" />
+                        android:timePickerMode="spinner"
+                        android:textColor="#FFFFFF"/>  <!-- Màu chữ trắng -->
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -140,22 +194,26 @@
             android:id="@+id/reminderStatusText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:layout_gravity="center_horizontal"
-            android:text="Chưa bật nhắc nhở"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp" />
+            android:layout_marginTop="16dp"
+            android:text="Chưa bật thông báo"
+            android:textColor="#074757"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <!-- Nút bật/tắt nhắc nhở -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/toggleReminderButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:layout_gravity="center_horizontal"
-            android:text="Bật nhắc nhở"
-            android:textColor="#FFFFFF"
-            app:backgroundTint="#4FC3F7"
+            android:layout_marginTop="11dp"
+            android:minHeight="48dp"
+            android:text="Bật thông báo"
+            android:textColor="#120F0F"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            app:backgroundTint="#5BCEE9"
             app:cornerRadius="8dp" />
     </LinearLayout>
 
@@ -165,7 +223,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#01579B"
+        android:background="#FE01579B"
         android:elevation="8dp"
         app:itemIconTint="@color/nav_item_tint"
         app:itemTextColor="@color/nav_item_tint"
@@ -174,3 +232,4 @@
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu" />
 </androidx.constraintlayout.widget.ConstraintLayout>
+

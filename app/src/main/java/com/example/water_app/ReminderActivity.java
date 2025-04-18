@@ -2,7 +2,6 @@ package com.example.water_app;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,6 +9,7 @@ import android.os.Bundle;
 import android.widget.SeekBar;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
@@ -20,15 +20,15 @@ public class ReminderActivity extends BaseActivity {
 
     private SeekBar intervalSeekBar;
     private TextView intervalText;
-    private Button startTimeButton, endTimeButton;
+    private TimePicker startTimePicker, endTimePicker; // Thêm TimePicker cho giờ bắt đầu và kết thúc
     private TextView reminderStatusText;
     private Button toggleReminderButton;
     private AlarmManager alarmManager;
     private PendingIntent pendingIntent;
     private SharedPreferences preferences;
-    private int selectedInterval = 60; // Mặc định 60 phút
-    private int startHour = 8, startMinute = 0; // Mặc định 8:00
-    private int endHour = 20, endMinute = 0; // Mặc định 20:00
+    private int selectedInterval = 60;
+    private int startHour = 8, startMinute = 0;
+    private int endHour = 20, endMinute = 0;
     private boolean isReminderActive = false;
     private final int[] intervalValues = {15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180};
 
@@ -38,31 +38,45 @@ public class ReminderActivity extends BaseActivity {
         setContentView(R.layout.activity_reminder);
         setupBottomNavigation();
 
-        // Khởi tạo
         intervalSeekBar = findViewById(R.id.intervalSeekBar);
         intervalText = findViewById(R.id.intervalText);
-        startTimeButton = findViewById(R.id.startTimeButton);
-        endTimeButton = findViewById(R.id.endTimeButton);
+        startTimePicker = findViewById(R.id.startTimePicker); // Khởi tạo TimePicker cho giờ bắt đầu
+        endTimePicker = findViewById(R.id.endTimePicker); // Khởi tạo TimePicker cho giờ kết thúc
         reminderStatusText = findViewById(R.id.reminderStatusText);
         toggleReminderButton = findViewById(R.id.toggleReminderButton);
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         preferences = getSharedPreferences("ReminderPrefs", MODE_PRIVATE);
 
-        // Load cài đặt từ SharedPreferences
         loadPreferences();
 
-        // Thiết lập Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Thiết lập SeekBar
         setupIntervalSeekBar();
 
-        // Xử lý chọn khung giờ
-        startTimeButton.setOnClickListener(v -> showTimePicker(true));
-        endTimeButton.setOnClickListener(v -> showTimePicker(false));
+        // Đặt thời gian mặc định cho TimePicker từ SharedPreferences
+        startTimePicker.setHour(startHour);
+        startTimePicker.setMinute(startMinute);
+        endTimePicker.setHour(endHour);
+        endTimePicker.setMinute(endMinute);
 
-        // Xử lý bật/tắt nhắc nhở
+        // Lắng nghe thay đổi giờ và phút của TimePicker
+        startTimePicker.setOnTimeChangedListener((view, hourOfDay, minute) -> {
+            startHour = hourOfDay;
+            startMinute = minute;
+            updateTimeButtons();
+            updateReminderStatus();
+            savePreferences();
+        });
+
+        endTimePicker.setOnTimeChangedListener((view, hourOfDay, minute) -> {
+            endHour = hourOfDay;
+            endMinute = minute;
+            updateTimeButtons();
+            updateReminderStatus();
+            savePreferences();
+        });
+
         toggleReminderButton.setOnClickListener(v -> {
             if (isReminderActive) {
                 cancelReminder();
@@ -71,9 +85,7 @@ public class ReminderActivity extends BaseActivity {
             }
         });
 
-        // Cập nhật giao diện ban đầu
         updateIntervalText();
-        updateTimeButtons();
         updateReminderStatus();
     }
 
@@ -85,17 +97,13 @@ public class ReminderActivity extends BaseActivity {
                 updateIntervalText();
             }
 
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {
                 savePreferences();
                 updateReminderStatus();
             }
         });
 
-        // Đặt giá trị mặc định cho SeekBar
         for (int i = 0; i < intervalValues.length; i++) {
             if (intervalValues[i] == selectedInterval) {
                 intervalSeekBar.setProgress(i);
@@ -128,47 +136,19 @@ public class ReminderActivity extends BaseActivity {
         editor.apply();
     }
 
-    private void showTimePicker(boolean isStartTime) {
-        Calendar calendar = Calendar.getInstance();
-        int hour = isStartTime ? startHour : endHour;
-        int minute = isStartTime ? startMinute : endMinute;
-
-        TimePickerDialog timePickerDialog = new TimePickerDialog(
-                this,
-                (view, hourOfDay, minuteOfHour) -> {
-                    if (isStartTime) {
-                        startHour = hourOfDay;
-                        startMinute = minuteOfHour;
-                    } else {
-                        endHour = hourOfDay;
-                        endMinute = minuteOfHour;
-                    }
-                    updateTimeButtons();
-                    updateReminderStatus();
-                    savePreferences();
-                },
-                hour,
-                minute,
-                true
-        );
-        timePickerDialog.show();
-    }
-
     private void updateTimeButtons() {
-        startTimeButton.setText(String.format("%02d:%02d", startHour, startMinute));
-        endTimeButton.setText(String.format("%02d:%02d", endHour, endMinute));
+        // Cập nhật các button hiển thị giờ bắt đầu và kết thúc
+        reminderStatusText.setText(String.format(
+                "Nhắc nhở mỗi %d phút từ %02d:%02d đến %02d:%02d",
+                selectedInterval, startHour, startMinute, endHour, endMinute
+        ));
     }
 
     private void updateReminderStatus() {
         if (isReminderActive) {
-            reminderStatusText.setText(String.format(
-                    "Nhắc nhở mỗi %d phút từ %02d:%02d đến %02d:%02d",
-                    selectedInterval, startHour, startMinute, endHour, endMinute
-            ));
-            toggleReminderButton.setText("Tắt nhắc nhở");
+            toggleReminderButton.setText("Tắt thông báo");
         } else {
-            reminderStatusText.setText("Chưa bật nhắc nhở");
-            toggleReminderButton.setText("Bật nhắc nhở");
+            toggleReminderButton.setText("Bật thông báo");
         }
     }
 
@@ -211,7 +191,7 @@ public class ReminderActivity extends BaseActivity {
         isReminderActive = true;
         updateReminderStatus();
         savePreferences();
-        Toast.makeText(this, "Đã bật nhắc nhở", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Đã bật thông báo", Toast.LENGTH_SHORT).show();
     }
 
     private void cancelReminder() {
@@ -221,7 +201,7 @@ public class ReminderActivity extends BaseActivity {
         isReminderActive = false;
         updateReminderStatus();
         savePreferences();
-        Toast.makeText(this, "Đã tắt nhắc nhở", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Đã tắt thông báo", Toast.LENGTH_SHORT).show();
     }
 
     @Override

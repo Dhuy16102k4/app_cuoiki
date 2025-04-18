@@ -15,4 +15,8 @@
             <item name="cornerSize">50%</item>
         </style>
 
+    <style name="SpinnerTimePicker" parent="Theme.AppCompat.Light.Dialog">
+        <item name="android:timePickerMode">spinner</item>
+    </style>
+
 </resources>

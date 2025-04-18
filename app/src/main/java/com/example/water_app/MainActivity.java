@@ -68,7 +68,7 @@ public class MainActivity extends BaseActivity {
                 startActivity(new Intent(MainActivity.this, EditProfileActivity.class));
                 return true;
             } else if (itemId == R.id.menu_settings) {
-                Toast.makeText(MainActivity.this, "Mở màn hình cài đặt", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
                 return true;
             } else if (itemId == R.id.menu_logout) {
                 auth.signOut();

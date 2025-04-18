@@ -35,6 +35,7 @@
         </activity>
 
         <activity android:name=".ReminderActivity" />
+        <activity android:name=".SettingsActivity" />
 
         <activity
             android:name=".MainActivity"
