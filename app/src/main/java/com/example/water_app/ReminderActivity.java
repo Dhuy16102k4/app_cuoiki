@@ -5,6 +5,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.widget.SeekBar;
 import android.widget.Button;
@@ -87,6 +89,15 @@ public class ReminderActivity extends BaseActivity {
 
         updateIntervalText();
         updateReminderStatus();
+
+        // Điều chỉnh âm lượng hệ thống (đặt âm lượng hệ thống ở mức tối đa)
+        AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                0);
+
+        // Kiểm tra khi đến giờ nhắc nhở, phát âm thanh
+        playReminderSound();
     }
 
     private void setupIntervalSeekBar() {
@@ -207,5 +218,34 @@ public class ReminderActivity extends BaseActivity {
     @Override
     protected int getSelectedNavItemId() {
         return R.id.nav_set_reminder;
+    }
+
+    private void playReminderSound() {
+        // Lấy SharedPreferences để kiểm tra xem âm thanh có được bật và loại âm thanh đã chọn
+        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true);  // Mặc định là bật âm thanh
+        int selectedSound = prefs.getInt("selected_sound", 0);  // Mặc định là âm thanh 1
+
+        if (isSoundEnabled) {
+            int soundResId = R.raw.sound1;  // Mặc định âm thanh 1
+
+            // Lựa chọn âm thanh dựa trên giá trị index người dùng đã chọn
+            switch (selectedSound) {
+                case 1:
+                    soundResId = R.raw.sound2;
+                    break;
+                case 2:
+                    soundResId = R.raw.sound3;
+                    break;
+            }
+
+            // Phát âm thanh
+            MediaPlayer mediaPlayer = MediaPlayer.create(this, soundResId);
+
+            // Điều chỉnh âm lượng (1.0 là âm lượng tối đa)
+            mediaPlayer.setVolume(1.0f, 1.0f); // Âm lượng trái và phải đều là 1.0 (tối đa)
+
+            mediaPlayer.start();
+        }
     }
 }

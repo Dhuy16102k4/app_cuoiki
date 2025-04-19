@@ -1,29 +1,37 @@
 package com.example.water_app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.SwitchCompat;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class SettingsActivity extends AppCompatActivity {
+
+    private TextView selectedSoundName;
+    private final String[] soundOptions = {"Âm thanh 1", "Âm thanh 2", "Âm thanh 3"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        // Setup Toolbar
+        // Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("Cài đặt");
         setSupportActionBar(toolbar);
 
-        // Setup BottomNavigationView
+        // BottomNavigationView
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigationView);
-        bottomNav.setSelectedItemId(R.id.menu_settings); // đánh dấu tab đang ở settings
-
+        bottomNav.setSelectedItemId(R.id.menu_settings);
         bottomNav.setOnNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
@@ -35,32 +43,65 @@ public class SettingsActivity extends AppCompatActivity {
                 finish();
                 return true;
             } else if (id == R.id.menu_settings) {
-                // đang ở settings, không làm gì
                 return true;
             }
             return false;
         });
 
-        // Xử lý Switch để chuyển chế độ sáng/tối
+        // Switch chế độ tối/sáng
         SwitchCompat themeSwitch = findViewById(R.id.themeSwitch);
-        themeSwitch.setChecked(isDarkModeEnabled()); // Set trạng thái theo chế độ hiện tại
-
+        themeSwitch.setChecked(isDarkModeEnabled());
         themeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                // Bật chế độ tối
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            } else {
-                // Bật chế độ sáng
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            }
+            AppCompatDelegate.setDefaultNightMode(
+                    isChecked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO
+            );
         });
+
+        // Switch âm thanh
+        SwitchCompat soundSwitch = findViewById(R.id.soundSwitch);
+        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        soundSwitch.setChecked(prefs.getBoolean("sound_enabled", true));
+        soundSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("sound_enabled", isChecked).apply();
+        });
+
+        // Hiển thị tên âm thanh đã chọn
+        selectedSoundName = findViewById(R.id.selectedSoundName);
+        int selectedIndex = prefs.getInt("selected_sound", -1);
+        if (selectedIndex >= 0 && selectedIndex < soundOptions.length) {
+            selectedSoundName.setText(soundOptions[selectedIndex]);
+        }
+
+        // Gắn sự kiện click cho toàn bộ container chọn âm thanh
+        View soundOptionContainer = findViewById(R.id.soundOptionContainer1);
+        soundOptionContainer.setOnClickListener(this::onSelectSoundClick);
     }
 
-    // Hàm kiểm tra chế độ hiện tại (sáng/tối)
     private boolean isDarkModeEnabled() {
         int nightMode = AppCompatDelegate.getDefaultNightMode();
         return nightMode == AppCompatDelegate.MODE_NIGHT_YES;
     }
+
+    public void onSelectSoundClick(View view) {
+        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        int selectedIndex = prefs.getInt("selected_sound", -1);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chọn âm thanh nhắc nhở")
+                .setSingleChoiceItems(soundOptions, selectedIndex, (dialog, which) -> {
+                    prefs.edit().putInt("selected_sound", which).apply();
+                    selectedSoundName.setText(soundOptions[which]);
+                })
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
+
+        builder.create().show();
+    }
 }
+
+
+
+
+
 
 
