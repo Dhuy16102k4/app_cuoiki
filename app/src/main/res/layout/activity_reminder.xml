@@ -197,7 +197,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="16dp"
             android:text="Chưa bật thông báo"
-            android:textColor="#074757"
+            android:textColor="#05313C"
             android:textSize="18sp"
             android:textStyle="bold" />
 

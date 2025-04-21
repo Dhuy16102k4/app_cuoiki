@@ -21,17 +21,19 @@ import java.util.Calendar;
 public class ReminderActivity extends BaseActivity {
 
     private SeekBar intervalSeekBar;
-    private TextView intervalText;
-    private TimePicker startTimePicker, endTimePicker; // Thêm TimePicker cho giờ bắt đầu và kết thúc
-    private TextView reminderStatusText;
+    private TextView intervalText, reminderStatusText;
+    private TimePicker startTimePicker, endTimePicker;
     private Button toggleReminderButton;
+
     private AlarmManager alarmManager;
     private PendingIntent pendingIntent;
     private SharedPreferences preferences;
+
     private int selectedInterval = 60;
     private int startHour = 8, startMinute = 0;
     private int endHour = 20, endMinute = 0;
     private boolean isReminderActive = false;
+
     private final int[] intervalValues = {15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180};
 
     @Override
@@ -40,45 +42,48 @@ public class ReminderActivity extends BaseActivity {
         setContentView(R.layout.activity_reminder);
         setupBottomNavigation();
 
+        // Ánh xạ view
         intervalSeekBar = findViewById(R.id.intervalSeekBar);
         intervalText = findViewById(R.id.intervalText);
-        startTimePicker = findViewById(R.id.startTimePicker); // Khởi tạo TimePicker cho giờ bắt đầu
-        endTimePicker = findViewById(R.id.endTimePicker); // Khởi tạo TimePicker cho giờ kết thúc
+        startTimePicker = findViewById(R.id.startTimePicker);
+        endTimePicker = findViewById(R.id.endTimePicker);
         reminderStatusText = findViewById(R.id.reminderStatusText);
         toggleReminderButton = findViewById(R.id.toggleReminderButton);
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         preferences = getSharedPreferences("ReminderPrefs", MODE_PRIVATE);
 
-        loadPreferences();
-
+        // Setup Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Load dữ liệu lưu trữ
+        loadPreferences();
+
+        // Setup SeekBar
         setupIntervalSeekBar();
 
-        // Đặt thời gian mặc định cho TimePicker từ SharedPreferences
+        // Set lại TimePicker từ dữ liệu
         startTimePicker.setHour(startHour);
         startTimePicker.setMinute(startMinute);
         endTimePicker.setHour(endHour);
         endTimePicker.setMinute(endMinute);
 
-        // Lắng nghe thay đổi giờ và phút của TimePicker
+        // Bắt sự kiện thay đổi thời gian
         startTimePicker.setOnTimeChangedListener((view, hourOfDay, minute) -> {
             startHour = hourOfDay;
             startMinute = minute;
-            updateTimeButtons();
-            updateReminderStatus();
+            updateReminderDescription();
             savePreferences();
         });
 
         endTimePicker.setOnTimeChangedListener((view, hourOfDay, minute) -> {
             endHour = hourOfDay;
             endMinute = minute;
-            updateTimeButtons();
-            updateReminderStatus();
+            updateReminderDescription();
             savePreferences();
         });
 
+        // Nút bật/tắt thông báo
         toggleReminderButton.setOnClickListener(v -> {
             if (isReminderActive) {
                 cancelReminder();
@@ -87,20 +92,32 @@ public class ReminderActivity extends BaseActivity {
             }
         });
 
+        // Cập nhật UI theo trạng thái đã lưu
         updateIntervalText();
+        updateReminderDescription();
         updateReminderStatus();
 
-        // Điều chỉnh âm lượng hệ thống (đặt âm lượng hệ thống ở mức tối đa)
+        // Cài đặt âm lượng hệ thống
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+        audioManager.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
                 audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
-                0);
+                0
+        );
 
-        // Kiểm tra khi đến giờ nhắc nhở, phát âm thanh
+        // Phát âm thanh test
         playReminderSound();
     }
 
     private void setupIntervalSeekBar() {
+        intervalSeekBar.setMax(intervalValues.length - 1);
+        for (int i = 0; i < intervalValues.length; i++) {
+            if (intervalValues[i] == selectedInterval) {
+                intervalSeekBar.setProgress(i);
+                break;
+            }
+        }
+
         intervalSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -111,20 +128,34 @@ public class ReminderActivity extends BaseActivity {
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {
                 savePreferences();
-                updateReminderStatus();
+                updateReminderDescription();
             }
         });
-
-        for (int i = 0; i < intervalValues.length; i++) {
-            if (intervalValues[i] == selectedInterval) {
-                intervalSeekBar.setProgress(i);
-                break;
-            }
-        }
     }
 
     private void updateIntervalText() {
         intervalText.setText(selectedInterval + " phút");
+    }
+
+    private void updateReminderDescription() {
+        reminderStatusText.setText(String.format(
+                "Nhắc nhở mỗi %d phút từ %02d:%02d đến %02d:%02d",
+                selectedInterval, startHour, startMinute, endHour, endMinute
+        ));
+    }
+
+    private void updateReminderStatus() {
+        if (isReminderActive) {
+            toggleReminderButton.setText("Tắt thông báo");
+            intervalSeekBar.setEnabled(false);
+            startTimePicker.setEnabled(false);
+            endTimePicker.setEnabled(false);
+        } else {
+            toggleReminderButton.setText("Bật thông báo");
+            intervalSeekBar.setEnabled(true);
+            startTimePicker.setEnabled(true);
+            endTimePicker.setEnabled(true);
+        }
     }
 
     private void loadPreferences() {
@@ -145,22 +176,6 @@ public class ReminderActivity extends BaseActivity {
         editor.putInt("endMinute", endMinute);
         editor.putBoolean("isReminderActive", isReminderActive);
         editor.apply();
-    }
-
-    private void updateTimeButtons() {
-        // Cập nhật các button hiển thị giờ bắt đầu và kết thúc
-        reminderStatusText.setText(String.format(
-                "Nhắc nhở mỗi %d phút từ %02d:%02d đến %02d:%02d",
-                selectedInterval, startHour, startMinute, endHour, endMinute
-        ));
-    }
-
-    private void updateReminderStatus() {
-        if (isReminderActive) {
-            toggleReminderButton.setText("Tắt thông báo");
-        } else {
-            toggleReminderButton.setText("Bật thông báo");
-        }
     }
 
     private void startReminder() {
@@ -215,21 +230,13 @@ public class ReminderActivity extends BaseActivity {
         Toast.makeText(this, "Đã tắt thông báo", Toast.LENGTH_SHORT).show();
     }
 
-    @Override
-    protected int getSelectedNavItemId() {
-        return R.id.nav_set_reminder;
-    }
-
     private void playReminderSound() {
-        // Lấy SharedPreferences để kiểm tra xem âm thanh có được bật và loại âm thanh đã chọn
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true);  // Mặc định là bật âm thanh
-        int selectedSound = prefs.getInt("selected_sound", 0);  // Mặc định là âm thanh 1
+        boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true);
+        int selectedSound = prefs.getInt("selected_sound", 0);
 
         if (isSoundEnabled) {
-            int soundResId = R.raw.sound1;  // Mặc định âm thanh 1
-
-            // Lựa chọn âm thanh dựa trên giá trị index người dùng đã chọn
+            int soundResId = R.raw.sound1;
             switch (selectedSound) {
                 case 1:
                     soundResId = R.raw.sound2;
@@ -239,13 +246,15 @@ public class ReminderActivity extends BaseActivity {
                     break;
             }
 
-            // Phát âm thanh
             MediaPlayer mediaPlayer = MediaPlayer.create(this, soundResId);
-
-            // Điều chỉnh âm lượng (1.0 là âm lượng tối đa)
-            mediaPlayer.setVolume(1.0f, 1.0f); // Âm lượng trái và phải đều là 1.0 (tối đa)
-
+            mediaPlayer.setVolume(1.0f, 1.0f);
             mediaPlayer.start();
         }
     }
+
+    @Override
+    protected int getSelectedNavItemId() {
+        return R.id.nav_set_reminder;
+    }
 }
+

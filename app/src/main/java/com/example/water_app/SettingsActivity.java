@@ -2,22 +2,23 @@ package com.example.water_app;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
-
+import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.SwitchCompat;
-
+import androidx.appcompat.widget.Toolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class SettingsActivity extends AppCompatActivity {
 
     private TextView selectedSoundName;
     private final String[] soundOptions = {"Âm thanh 1", "Âm thanh 2", "Âm thanh 3"};
+    private MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,13 +92,44 @@ public class SettingsActivity extends AppCompatActivity {
                 .setSingleChoiceItems(soundOptions, selectedIndex, (dialog, which) -> {
                     prefs.edit().putInt("selected_sound", which).apply();
                     selectedSoundName.setText(soundOptions[which]);
+
+                    // Phát âm thanh ngay khi chọn
+                    playSelectedSound(which);
                 })
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
                 .setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
 
         builder.create().show();
     }
+
+    private void playSelectedSound(int soundIndex) {
+        // Dừng âm thanh cũ nếu có
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+        }
+
+        int soundResId = R.raw.sound1;  // Mặc định âm thanh 1
+        switch (soundIndex) {
+            case 0:
+                soundResId = R.raw.sound1;
+                break;
+            case 1:
+                soundResId = R.raw.sound2;
+                break;
+            case 2:
+                soundResId = R.raw.sound3;
+                break;
+        }
+
+        // Tạo đối tượng MediaPlayer và phát âm thanh
+        mediaPlayer = MediaPlayer.create(this, soundResId);
+        mediaPlayer.start();
+
+        // Hiển thị Toast thông báo âm thanh đã được chọn
+        Toast.makeText(this, "Đang phát: " + soundOptions[soundIndex], Toast.LENGTH_SHORT).show();
+    }
 }
+
 
 
 
