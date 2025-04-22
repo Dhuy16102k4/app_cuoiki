@@ -2,15 +2,11 @@ package com.example.water_app;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ProgressBar;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -22,14 +18,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MainActivity extends BaseActivity {
-    private static final String TAG = "MainActivity";
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private ProgressBar waterProgressBar;
@@ -40,6 +31,10 @@ public class MainActivity extends BaseActivity {
     private double waterGoal = 0;
     private double drankWater = 0;
     private List<WaterHistoryAdapter.WaterEntry> waterEntries = new ArrayList<>();
+    private String selectedSoundName = "sound1";  // Mặc định là sound1
+    private int selectedSoundResId = R.raw.sound1; // âm thanh mặc định
+    private int[] soundResIds = { R.raw.sound1, R.raw.sound2, R.raw.sound3 }; // bạn có thể thêm các âm khác nếu có
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,56 +44,53 @@ public class MainActivity extends BaseActivity {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Kiểm tra đăng nhập
+        SharedPreferences sharedPreferences = getSharedPreferences("settings", MODE_PRIVATE);
+        int selectedSoundIndex = sharedPreferences.getInt("selected_sound", 0);
+        if (selectedSoundIndex < 0 || selectedSoundIndex >= soundResIds.length) {
+            selectedSoundIndex = 0; // tránh lỗi index
+        }
+        selectedSoundResId = soundResIds[selectedSoundIndex];
+
+
         if (auth.getCurrentUser() == null) {
-            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
 
-        // Thiết lập Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("Water Reminder");
-        toolbar.setTitleTextColor(getResources().getColor(android.R.color.white));
         toolbar.inflateMenu(R.menu.main_menu);
         toolbar.setOnMenuItemClickListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.menu_profile) {
-                startActivity(new Intent(MainActivity.this, EditProfileActivity.class));
+            int id = item.getItemId();
+            if (id == R.id.menu_profile) {
+                startActivity(new Intent(this, EditProfileActivity.class));
                 return true;
-            } else if (itemId == R.id.menu_settings) {
-                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+            } else if (id == R.id.menu_settings) {
+                startActivity(new Intent(this, SettingsActivity.class));
                 return true;
-            } else if (itemId == R.id.menu_logout) {
+            } else if (id == R.id.menu_logout) {
                 auth.signOut();
-                Toast.makeText(MainActivity.this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                startActivity(new Intent(this, LoginActivity.class));
                 finish();
                 return true;
             }
             return false;
         });
 
-        // Khởi tạo views
         waterProgressBar = findViewById(R.id.waterProgressBar);
         waterStatusText = findViewById(R.id.waterStatusText);
         addWaterButton = findViewById(R.id.addWaterButton);
         waterHistoryRecyclerView = findViewById(R.id.waterHistoryRecyclerView);
 
-        // Thiết lập RecyclerView
         waterHistoryRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         waterHistoryAdapter = new WaterHistoryAdapter();
         waterHistoryRecyclerView.setAdapter(waterHistoryAdapter);
 
-        // Thiết lập BottomNavigationView
         setupBottomNavigation();
-
-        // Lấy dữ liệu
         fetchWaterGoal();
         fetchWaterHistory();
 
-        // Xử lý sự kiện thêm nước
         addWaterButton.setOnClickListener(v -> showAddWaterDialog());
     }
 
@@ -108,22 +100,13 @@ public class MainActivity extends BaseActivity {
                 .addOnSuccessListener(document -> {
                     if (document.exists()) {
                         Double goal = document.getDouble("waterGoal");
-                        if (goal != null) {
-                            waterGoal = goal;
-                            updateWaterStatus();
-                        } else {
-                            Toast.makeText(this, "Không tìm thấy mục tiêu nước", Toast.LENGTH_SHORT).show();
-                            waterGoal = 2000;
-                            updateWaterStatus();
-                        }
+                        waterGoal = goal != null ? goal : 2000;
                     } else {
-                        Toast.makeText(this, "Không tìm thấy dữ liệu người dùng", Toast.LENGTH_SHORT).show();
                         waterGoal = 2000;
-                        updateWaterStatus();
                     }
+                    updateWaterStatus();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi khi lấy dữ liệu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     waterGoal = 2000;
                     updateWaterStatus();
                 });
@@ -133,9 +116,6 @@ public class MainActivity extends BaseActivity {
         String userId = auth.getCurrentUser().getUid();
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
         long startOfDay = calendar.getTimeInMillis();
         long endOfDay = startOfDay + 24 * 60 * 60 * 1000 - 1;
 
@@ -158,9 +138,6 @@ public class MainActivity extends BaseActivity {
                     }
                     waterHistoryAdapter.setWaterEntries(waterEntries);
                     updateWaterStatus();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi khi lấy lịch sử: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -187,19 +164,12 @@ public class MainActivity extends BaseActivity {
             cardTea.setCardBackgroundColor(getResources().getColor(R.color.card_background, null));
             cardCoffee.setCardBackgroundColor(getResources().getColor(R.color.card_background, null));
             cardMilk.setCardBackgroundColor(getResources().getColor(R.color.card_background, null));
+            ((CardView) v).setCardBackgroundColor(getResources().getColor(R.color.card_selected, null));
 
-            CardView selectedCard = (CardView) v;
-            selectedCard.setCardBackgroundColor(getResources().getColor(R.color.card_selected, null));
-
-            if (v.getId() == R.id.cardWater) {
-                selectedDrinkType[0] = "Nước lọc";
-            } else if (v.getId() == R.id.cardTea) {
-                selectedDrinkType[0] = "Trà";
-            } else if (v.getId() == R.id.cardCoffee) {
-                selectedDrinkType[0] = "Cà phê";
-            } else if (v.getId() == R.id.cardMilk) {
-                selectedDrinkType[0] = "Sữa";
-            }
+            if (v.getId() == R.id.cardWater) selectedDrinkType[0] = "Nước lọc";
+            else if (v.getId() == R.id.cardTea) selectedDrinkType[0] = "Trà";
+            else if (v.getId() == R.id.cardCoffee) selectedDrinkType[0] = "Cà phê";
+            else if (v.getId() == R.id.cardMilk) selectedDrinkType[0] = "Sữa";
         };
 
         cardWater.setOnClickListener(cardClickListener);
@@ -248,15 +218,10 @@ public class MainActivity extends BaseActivity {
 
     private double calculateWaterEquivalent(String drinkType, double amount) {
         switch (drinkType) {
-            case "Trà":
-                return amount * 0.9;
-            case "Cà phê":
-                return amount * 0.8;
-            case "Sữa":
-                return amount * 0.85;
-            case "Nước lọc":
-            default:
-                return amount;
+            case "Trà": return amount * 0.9;
+            case "Cà phê": return amount * 0.8;
+            case "Sữa": return amount * 0.85;
+            default: return amount;
         }
     }
 
@@ -275,6 +240,17 @@ public class MainActivity extends BaseActivity {
                     waterHistoryAdapter.setWaterEntries(waterEntries);
                     updateWaterStatus();
                     Toast.makeText(this, "Đã thêm " + amount + "ml " + drinkType, Toast.LENGTH_SHORT).show();
+
+                    SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+                    boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true); // mặc định bật
+
+                    if (isSoundEnabled) {
+                        MediaPlayer mediaPlayer = MediaPlayer.create(this, selectedSoundResId);
+                        mediaPlayer.start();
+                        mediaPlayer.setOnCompletionListener(MediaPlayer::release);
+                    }
+
+
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Lỗi khi lưu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -282,11 +258,21 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updateWaterStatus() {
+        // Tính toán lượng nước đã uống và còn thiếu
         String status = String.format("Đã uống: %.0f ml / Còn thiếu: %.0f ml", drankWater, Math.max(0, waterGoal - drankWater));
         waterStatusText.setText(status);
+
+        // Cập nhật tiến trình thanh ProgressBar
         int progress = (int) ((drankWater / waterGoal) * 100);
         waterProgressBar.setProgress(Math.min(progress, 100));
+
+        // Kiểm tra nếu người dùng đã uống đủ nước trong ngày
+        if (drankWater >= waterGoal) {
+            // Hiển thị thông báo Toast khi người dùng đạt mục tiêu
+            Toast.makeText(this, "Chúc mừng! Bạn đã uống đủ nước hôm nay!", Toast.LENGTH_LONG).show();
+        }
     }
+
 
     @Override
     protected int getSelectedNavItemId() {
