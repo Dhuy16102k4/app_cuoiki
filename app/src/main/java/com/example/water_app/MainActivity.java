@@ -5,19 +5,19 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.bumptech.glide.Glide;
 import com.example.water_app.auth.EditProfileActivity;
 import com.example.water_app.auth.LoginActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
-
 import java.util.*;
 
 public class MainActivity extends BaseActivity {
@@ -30,11 +30,11 @@ public class MainActivity extends BaseActivity {
     private WaterHistoryAdapter waterHistoryAdapter;
     private double waterGoal = 0;
     private double drankWater = 0;
+    private boolean hasShownToast = false; // Đánh dấu đã hiện Toast chúc mừng lần đầu
     private List<WaterHistoryAdapter.WaterEntry> waterEntries = new ArrayList<>();
-    private String selectedSoundName = "sound1";  // Mặc định là sound1
-    private int selectedSoundResId = R.raw.sound1; // âm thanh mặc định
-    private int[] soundResIds = { R.raw.sound1, R.raw.sound2, R.raw.sound3 }; // bạn có thể thêm các âm khác nếu có
-
+    private String selectedSoundName = "sound1";
+    private int selectedSoundResId = R.raw.sound1;
+    private int[] soundResIds = { R.raw.sound1, R.raw.sound2, R.raw.sound3 };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,10 +47,9 @@ public class MainActivity extends BaseActivity {
         SharedPreferences sharedPreferences = getSharedPreferences("settings", MODE_PRIVATE);
         int selectedSoundIndex = sharedPreferences.getInt("selected_sound", 0);
         if (selectedSoundIndex < 0 || selectedSoundIndex >= soundResIds.length) {
-            selectedSoundIndex = 0; // tránh lỗi index
+            selectedSoundIndex = 0;
         }
         selectedSoundResId = soundResIds[selectedSoundIndex];
-
 
         if (auth.getCurrentUser() == null) {
             startActivity(new Intent(this, LoginActivity.class));
@@ -127,6 +126,7 @@ public class MainActivity extends BaseActivity {
                 .addOnSuccessListener(querySnapshot -> {
                     waterEntries.clear();
                     drankWater = 0;
+                    hasShownToast = false;
                     for (var doc : querySnapshot) {
                         String drinkType = doc.getString("drinkType");
                         Double amount = doc.getDouble("amount");
@@ -242,14 +242,12 @@ public class MainActivity extends BaseActivity {
                     Toast.makeText(this, "Đã thêm " + amount + "ml " + drinkType, Toast.LENGTH_SHORT).show();
 
                     SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-                    boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true); // mặc định bật
-
+                    boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true);
                     if (isSoundEnabled) {
                         MediaPlayer mediaPlayer = MediaPlayer.create(this, selectedSoundResId);
                         mediaPlayer.start();
                         mediaPlayer.setOnCompletionListener(MediaPlayer::release);
                     }
-
 
                 })
                 .addOnFailureListener(e -> {
@@ -258,20 +256,32 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updateWaterStatus() {
-        // Tính toán lượng nước đã uống và còn thiếu
-        String status = String.format("Đã uống: %.0f ml / Còn thiếu: %.0f ml", drankWater, Math.max(0, waterGoal - drankWater));
-        waterStatusText.setText(status);
-
-        // Cập nhật tiến trình thanh ProgressBar
+        waterStatusText.setText(String.format("Đã uống: %.0f ml / Còn thiếu: %.0f ml", drankWater, Math.max(0, waterGoal - drankWater)));
         int progress = (int) ((drankWater / waterGoal) * 100);
         waterProgressBar.setProgress(Math.min(progress, 100));
 
-        // Kiểm tra nếu người dùng đã uống đủ nước trong ngày
         if (drankWater >= waterGoal) {
-            // Hiển thị thông báo Toast khi người dùng đạt mục tiêu
-            Toast.makeText(this, "Chúc mừng! Bạn đã uống đủ nước hôm nay!", Toast.LENGTH_LONG).show();
+            if (!hasShownToast) {
+                Toast.makeText(this, "Chúc mừng! Bạn đã uống đủ nước hôm nay!", Toast.LENGTH_LONG).show();
+                hasShownToast = true;
+            } else if (drankWater > waterGoal) {
+                showCongratulationGif();
+            }
         }
     }
+
+    private void showCongratulationGif() {
+        FrameLayout congratsContainer = findViewById(R.id.congratsContainer);
+        ImageView gifImageView = findViewById(R.id.gifImageView);
+        TextView gifTextView = findViewById(R.id.gifTextView);
+
+        congratsContainer.setVisibility(View.VISIBLE);
+        Glide.with(this).load(R.drawable.congratulation_gif).into(gifImageView);
+        gifTextView.setText("Tuyệt vời, bạn chăm lắm đó!");
+
+        new Handler().postDelayed(() -> congratsContainer.setVisibility(View.GONE), 3000);
+    }
+
 
 
     @Override

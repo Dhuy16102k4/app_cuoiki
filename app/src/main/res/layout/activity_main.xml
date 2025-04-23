@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background5">
@@ -20,8 +21,6 @@
         app:titleTextColor="#FFFFFF" />
 
     <!-- Nội dung chính -->
-
-    <!-- BottomNavigationView -->
     <LinearLayout
         android:id="@+id/mainContent"
         android:layout_width="0dp"
@@ -29,16 +28,12 @@
         android:background="@drawable/background5"
         android:orientation="vertical"
         android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintVertical_bias="0.0">
-    
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Phần ProgressBar và thông tin #0277BD  app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"-->
+        <!-- Card: Progress và Thông tin -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -70,9 +65,7 @@
                     android:max="100"
                     android:progress="0"
                     android:progressBackgroundTint="#84D5DC"
-                    android:progressTint="#4FC3F7">
-
-                </ProgressBar>
+                    android:progressTint="#4FC3F7" />
 
                 <TextView
                     android:id="@+id/waterStatusText"
@@ -95,7 +88,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- RecyclerView cho lịch sử uống nước #0288D1-->
+        <!-- Card: RecyclerView -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -117,6 +110,40 @@
         </androidx.cardview.widget.CardView>
     </LinearLayout>
 
+    <FrameLayout
+        android:id="@+id/congratsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:background="#80000000"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/gifImageView"
+                android:layout_width="200dp"
+                android:layout_height="200dp" />
+
+            <TextView
+                android:id="@+id/gifTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tuyệt vời, bạn chăm lắm đó!"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginTop="12dp"/>
+        </LinearLayout>
+    </FrameLayout>
+
+
+    <!-- Bottom Navigation View -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
@@ -127,9 +154,9 @@
         app:itemIconTint="@color/nav_item_tint"
         app:itemTextColor="@color/nav_item_tint"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

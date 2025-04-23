@@ -33,6 +33,7 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 auto-value-annotations = { group = "com.google.auto.value", name = "auto-value-annotations", version.ref = "autoValue" }
 auto-value = { group = "com.google.auto.value", name = "auto-value", version.ref = "autoValue" }
+glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glideVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

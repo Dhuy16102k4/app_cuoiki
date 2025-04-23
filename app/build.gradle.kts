@@ -29,6 +29,10 @@ android {
 dependencies {
     implementation(libs.auto.value.annotations)
     annotationProcessor(libs.auto.value)
+
+    implementation(libs.github.glide)
+    annotationProcessor(libs.glide.compiler)
+
     implementation(libs.github.glide)
     implementation(libs.material.v190)
     implementation(libs.firebase.analytics)
