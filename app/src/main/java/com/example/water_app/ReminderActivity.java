@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.widget.SeekBar;
 import android.widget.Button;
@@ -29,12 +28,12 @@ public class ReminderActivity extends BaseActivity {
     private PendingIntent pendingIntent;
     private SharedPreferences preferences;
 
-    private int selectedInterval = 60;
+    private int selectedInterval = 60; // In seconds
     private int startHour = 8, startMinute = 0;
     private int endHour = 20, endMinute = 0;
     private boolean isReminderActive = false;
 
-    private final int[] intervalValues = {15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180};
+    private final int[] intervalValues = {15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180}; // Seconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,9 +103,6 @@ public class ReminderActivity extends BaseActivity {
                 audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
                 0
         );
-
-        // Phát âm thanh test
-        playReminderSound();
     }
 
     private void setupIntervalSeekBar() {
@@ -134,12 +130,12 @@ public class ReminderActivity extends BaseActivity {
     }
 
     private void updateIntervalText() {
-        intervalText.setText(selectedInterval + " phút");
+        intervalText.setText(selectedInterval + " giây");
     }
 
     private void updateReminderDescription() {
         reminderStatusText.setText(String.format(
-                "Nhắc nhở mỗi %d phút từ %02d:%02d đến %02d:%02d",
+                "Nhắc nhở mỗi %d giây từ %02d:%02d đến %02d:%02d",
                 selectedInterval, startHour, startMinute, endHour, endMinute
         ));
     }
@@ -201,7 +197,7 @@ public class ReminderActivity extends BaseActivity {
                 this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        long intervalMillis = selectedInterval * 60 * 1000;
+        long intervalMillis = selectedInterval * 1000; // Convert seconds to milliseconds
         long triggerTime = startCalendar.getTimeInMillis();
         if (System.currentTimeMillis() > triggerTime) {
             triggerTime += intervalMillis;
@@ -230,31 +226,8 @@ public class ReminderActivity extends BaseActivity {
         Toast.makeText(this, "Đã tắt thông báo", Toast.LENGTH_SHORT).show();
     }
 
-    private void playReminderSound() {
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true);
-        int selectedSound = prefs.getInt("selected_sound", 0);
-
-        if (isSoundEnabled) {
-            int soundResId = R.raw.sound1;
-            switch (selectedSound) {
-                case 1:
-                    soundResId = R.raw.sound2;
-                    break;
-                case 2:
-                    soundResId = R.raw.sound3;
-                    break;
-            }
-
-            MediaPlayer mediaPlayer = MediaPlayer.create(this, soundResId);
-            mediaPlayer.setVolume(1.0f, 1.0f);
-            mediaPlayer.start();
-        }
-    }
-
     @Override
     protected int getSelectedNavItemId() {
         return R.id.nav_set_reminder;
     }
 }
-

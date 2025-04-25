@@ -30,11 +30,12 @@ public class MainActivity extends BaseActivity {
     private WaterHistoryAdapter waterHistoryAdapter;
     private double waterGoal = 0;
     private double drankWater = 0;
-    private boolean hasShownToast = false; // Đánh dấu đã hiện Toast chúc mừng lần đầu
+    private boolean hasShownToast = false;
     private List<WaterHistoryAdapter.WaterEntry> waterEntries = new ArrayList<>();
     private String selectedSoundName = "sound1";
     private int selectedSoundResId = R.raw.sound1;
     private int[] soundResIds = { R.raw.sound1, R.raw.sound2, R.raw.sound3 };
+    private SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,20 +44,23 @@ public class MainActivity extends BaseActivity {
 
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        prefs = getSharedPreferences("settings", MODE_PRIVATE);
 
-        SharedPreferences sharedPreferences = getSharedPreferences("settings", MODE_PRIVATE);
-        int selectedSoundIndex = sharedPreferences.getInt("selected_sound", 0);
+        // Initialize sound
+        int selectedSoundIndex = prefs.getInt("selected_sound", 0);
         if (selectedSoundIndex < 0 || selectedSoundIndex >= soundResIds.length) {
             selectedSoundIndex = 0;
         }
         selectedSoundResId = soundResIds[selectedSoundIndex];
 
+        // Check if user is logged in
         if (auth.getCurrentUser() == null) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
 
+        // Setup toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("Water Reminder");
         toolbar.inflateMenu(R.menu.main_menu);
@@ -77,6 +81,7 @@ public class MainActivity extends BaseActivity {
             return false;
         });
 
+        // Initialize UI components
         waterProgressBar = findViewById(R.id.waterProgressBar);
         waterStatusText = findViewById(R.id.waterStatusText);
         addWaterButton = findViewById(R.id.addWaterButton);
@@ -87,14 +92,37 @@ public class MainActivity extends BaseActivity {
         waterHistoryRecyclerView.setAdapter(waterHistoryAdapter);
 
         setupBottomNavigation();
-        fetchWaterGoal();
-        fetchWaterHistory();
 
+        // Reset hasShownToast daily
+        resetDailyToastFlag();
+
+        // Fetch data and update UI
+        fetchWaterData();
         addWaterButton.setOnClickListener(v -> showAddWaterDialog());
     }
 
-    private void fetchWaterGoal() {
+    private void resetDailyToastFlag() {
+        long lastReset = prefs.getLong("last_toast_reset", 0);
+        Calendar now = Calendar.getInstance();
+        Calendar lastResetCal = Calendar.getInstance();
+        lastResetCal.setTimeInMillis(lastReset);
+
+        // Reset if it's a new day
+        if (now.get(Calendar.DAY_OF_YEAR) != lastResetCal.get(Calendar.DAY_OF_YEAR) ||
+                now.get(Calendar.YEAR) != lastResetCal.get(Calendar.YEAR)) {
+            hasShownToast = false;
+            prefs.edit().putBoolean("has_shown_toast", false)
+                    .putLong("last_toast_reset", now.getTimeInMillis())
+                    .apply();
+        } else {
+            hasShownToast = prefs.getBoolean("has_shown_toast", false);
+        }
+    }
+
+    private void fetchWaterData() {
         String userId = auth.getCurrentUser().getUid();
+
+        // Fetch water goal
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(document -> {
                     if (document.exists()) {
@@ -103,11 +131,12 @@ public class MainActivity extends BaseActivity {
                     } else {
                         waterGoal = 2000;
                     }
-                    updateWaterStatus();
+                    // Fetch history after goal is set
+                    fetchWaterHistory();
                 })
                 .addOnFailureListener(e -> {
                     waterGoal = 2000;
-                    updateWaterStatus();
+                    fetchWaterHistory();
                 });
     }
 
@@ -126,7 +155,6 @@ public class MainActivity extends BaseActivity {
                 .addOnSuccessListener(querySnapshot -> {
                     waterEntries.clear();
                     drankWater = 0;
-                    hasShownToast = false;
                     for (var doc : querySnapshot) {
                         String drinkType = doc.getString("drinkType");
                         Double amount = doc.getDouble("amount");
@@ -138,6 +166,12 @@ public class MainActivity extends BaseActivity {
                     }
                     waterHistoryAdapter.setWaterEntries(waterEntries);
                     updateWaterStatus();
+                })
+                .addOnFailureListener(e -> {
+                    waterEntries.clear();
+                    drankWater = 0;
+                    waterHistoryAdapter.setWaterEntries(waterEntries);
+                    updateWaterStatus();
                 });
     }
 
@@ -147,7 +181,9 @@ public class MainActivity extends BaseActivity {
         builder.setView(dialogView);
 
         CardView cardWater = dialogView.findViewById(R.id.cardWater);
-        CardView cardTea = dialogView.findViewById(R.id.cardTea);
+        CardView cardTea =
+
+                dialogView.findViewById(R.id.cardTea);
         CardView cardCoffee = dialogView.findViewById(R.id.cardCoffee);
         CardView cardMilk = dialogView.findViewById(R.id.cardMilk);
         Button amount200ml = dialogView.findViewById(R.id.amount200ml);
@@ -248,7 +284,6 @@ public class MainActivity extends BaseActivity {
                         mediaPlayer.start();
                         mediaPlayer.setOnCompletionListener(MediaPlayer::release);
                     }
-
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Lỗi khi lưu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -256,17 +291,27 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updateWaterStatus() {
+        // Only update if data is valid
+        if (waterGoal <= 0) {
+            waterStatusText.setText("Đang tải dữ liệu...");
+            waterProgressBar.setProgress(0);
+            return;
+        }
+
         waterStatusText.setText(String.format("Đã uống: %.0f ml / Còn thiếu: %.0f ml", drankWater, Math.max(0, waterGoal - drankWater)));
         int progress = (int) ((drankWater / waterGoal) * 100);
         waterProgressBar.setProgress(Math.min(progress, 100));
 
-        if (drankWater >= waterGoal) {
-            if (!hasShownToast) {
-                Toast.makeText(this, "Chúc mừng! Bạn đã uống đủ nước hôm nay!", Toast.LENGTH_LONG).show();
-                hasShownToast = true;
-            } else if (drankWater > waterGoal) {
-                showCongratulationGif();
-            }
+        // Show toast only once per day when goal is reached
+        if (drankWater >= waterGoal && !hasShownToast) {
+            Toast.makeText(this, "Chúc mừng! Bạn đã uống đủ nước hôm nay!", Toast.LENGTH_LONG).show();
+            hasShownToast = true;
+            prefs.edit().putBoolean("has_shown_toast", true).apply();
+        }
+
+        // Show GIF only if goal is exceeded and toast has been shown
+        if (drankWater > waterGoal && hasShownToast) {
+            showCongratulationGif();
         }
     }
 
@@ -281,8 +326,6 @@ public class MainActivity extends BaseActivity {
 
         new Handler().postDelayed(() -> congratsContainer.setVisibility(View.GONE), 3000);
     }
-
-
 
     @Override
     protected int getSelectedNavItemId() {

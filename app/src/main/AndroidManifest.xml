@@ -52,7 +52,7 @@
                 <action android:name="com.example.water_app.REMINDER" />
             </intent-filter>
         </receiver>
-
+        <activity android:name=".StatisticsActivity" />
 
 
     </application>
