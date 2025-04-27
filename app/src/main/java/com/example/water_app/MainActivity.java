@@ -95,7 +95,8 @@ public class MainActivity extends BaseActivity {
 
         // Reset hasShownToast daily
         resetDailyToastFlag();
-
+        //test data
+        //importTestWaterData();
         // Fetch data and update UI
         fetchWaterData();
         addWaterButton.setOnClickListener(v -> showAddWaterDialog());
@@ -139,7 +140,66 @@ public class MainActivity extends BaseActivity {
                     fetchWaterHistory();
                 });
     }
+    //import data test
+    private void importTestWaterData() {
+        String userId = auth.getCurrentUser().getUid();
 
+        // Reset cờ test_data_imported để import lại dữ liệu mới
+        prefs.edit().putBoolean("test_data_imported", false).apply();
+
+        // Kiểm tra xem dữ liệu test đã được thêm chưa
+        boolean isTestDataImported = prefs.getBoolean("test_data_imported", false);
+        if (isTestDataImported) {
+            return; // Nếu đã import rồi thì không làm gì
+        }
+
+        // Định nghĩa thời gian bắt đầu (20/04/2025) và kết thúc (27/04/2025)
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2025, Calendar.APRIL, 20, 0, 0, 0); // 20/04/2025
+        Calendar endDate = Calendar.getInstance();
+        endDate.set(2025, Calendar.APRIL, 27, 23, 59, 59); // 27/04/2025
+
+        // Loại đồ uống và lượng nước (tổng 2800 ml/ngày)
+        String[] drinkTypes = {"Nước lọc", "Trà", "Nước lọc"};
+        double[] amounts = {1000, 1000, 800}; // Tổng: 1000 + 1000 + 800 = 2800 ml
+        int[] hours = {8, 12, 18}; // Sáng 8h, Trưa 12h, Tối 18h
+
+        // Duyệt qua các ngày từ 20/04/2025 đến 27/04/2025
+        while (calendar.getTimeInMillis() <= endDate.getTimeInMillis()) {
+            for (int i = 0; i < 3; i++) { // 3 lần uống mỗi ngày
+                // Tạo timestamp cho lần uống
+                calendar.set(Calendar.HOUR_OF_DAY, hours[i]);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                long timestamp = calendar.getTimeInMillis();
+
+                // Tính lượng nước tương đương
+                double waterEquivalent = calculateWaterEquivalent(drinkTypes[i], amounts[i]);
+
+                // Tạo dữ liệu cho lần uống
+                Map<String, Object> waterEntry = new HashMap<>();
+                waterEntry.put("drinkType", drinkTypes[i]);
+                waterEntry.put("amount", waterEquivalent);
+                waterEntry.put("timestamp", timestamp);
+
+                // Thêm vào sub-collection "waterHistory" của user
+                db.collection("users").document(userId).collection("waterHistory")
+                        .document("test_" + timestamp) // ID duy nhất dựa trên timestamp
+                        .set(waterEntry)
+                        .addOnSuccessListener(aVoid -> {
+
+                        })
+                        .addOnFailureListener(e -> {
+
+                        });
+            }
+            // Tăng ngày lên 1
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        // Đánh dấu là đã import dữ liệu test
+        prefs.edit().putBoolean("test_data_imported", true).apply();
+    }
     private void fetchWaterHistory() {
         String userId = auth.getCurrentUser().getUid();
         Calendar calendar = Calendar.getInstance();
