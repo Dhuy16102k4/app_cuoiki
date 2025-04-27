@@ -4,43 +4,21 @@
     android:layout_width="120dp"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
+    android:background="#DBC517"
+    app:cardBackgroundColor="@android:color/transparent"
+
     app:cardCornerRadius="12dp"
-    app:cardElevation="4dp"
-    app:cardBackgroundColor="#FFFFFF">
+    app:cardElevation="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="141dp"
+        android:background="@drawable/waves"
+
+
+        android:gravity="center"
         android:orientation="vertical"
-        android:padding="12dp"
-        android:gravity="center">
-
-        <TextView
-            android:id="@+id/day_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Thứ Hai"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#0277BD" />
-
-        <TextView
-            android:id="@+id/day_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="01/01/2025"
-            android:textSize="12sp"
-            android:textColor="#333333" />
-
-        <TextView
-            android:id="@+id/water_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="0 ml"
-            android:textSize="12sp"
-            android:textColor="#333333" />
+        android:padding="12dp">
 
         <ImageView
             android:id="@+id/status_icon"
@@ -49,6 +27,33 @@
             android:layout_marginTop="8dp"
             android:contentDescription="Trạng thái mục tiêu"
             android:scaleType="centerInside" />
+
+        <TextView
+            android:id="@+id/day_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thứ Hai"
+            android:textColor="#CDDC39"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/day_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="01/01/2025"
+            android:textColor="#333333"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/water_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="0 ml"
+            android:textColor="#333333"
+            android:textSize="12sp" />
 
     </LinearLayout>
 

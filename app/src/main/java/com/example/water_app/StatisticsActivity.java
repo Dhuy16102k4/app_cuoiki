@@ -1,8 +1,15 @@
 package com.example.water_app;
 
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -13,13 +20,22 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.properties.TextAlignment;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -38,6 +54,7 @@ public class StatisticsActivity extends BaseActivity {
     private Calendar currentWeekStart;
     private double waterGoal = 2000; // Default, updated from Firestore/SharedPreferences
     private List<DayData> weekDays = new ArrayList<>();
+    private static final int STORAGE_PERMISSION_CODE = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,10 +64,12 @@ public class StatisticsActivity extends BaseActivity {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        // Setup Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("Thống kê");
         setSupportActionBar(toolbar);
 
+        // Setup UI components
         weekLabel = findViewById(R.id.week_label);
         prevWeekButton = findViewById(R.id.prev_week_button);
         nextWeekButton = findViewById(R.id.next_week_button);
@@ -89,6 +108,130 @@ public class StatisticsActivity extends BaseActivity {
 
         // Fetch initial data
         fetchWaterGoal();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_statistics, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_export) {
+            showExportFormatDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showExportFormatDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_export_format, null);
+        builder.setView(dialogView);
+
+        Button exportPdfButton = dialogView.findViewById(R.id.export_pdf_button);
+        Button cancelButton = dialogView.findViewById(R.id.cancel_button);
+
+        AlertDialog dialog = builder.create();
+
+        exportPdfButton.setOnClickListener(v -> {
+            dialog.dismiss();
+            checkStoragePermission();
+        });
+
+        cancelButton.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void checkStoragePermission() {
+        // Skip permission for Android 13+ when writing to Downloads
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            exportToPdf();
+            return;
+        }
+
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            // Explain why permission is needed
+            new AlertDialog.Builder(this)
+                    .setTitle("Yêu cầu quyền lưu trữ")
+                    .setMessage("Ứng dụng cần quyền lưu trữ để xuất dữ liệu uống nước ra file PDF. Vui lòng cấp quyền để tiếp tục.")
+                    .setPositiveButton("Cấp quyền", (d, w) -> {
+                        requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+                    })
+                    .setNegativeButton("Hủy", (d, w) -> {
+                        Toast.makeText(this, "Xuất dữ liệu bị hủy do thiếu quyền lưu trữ", Toast.LENGTH_SHORT).show();
+                    })
+                    .show();
+        } else {
+            exportToPdf();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Quyền lưu trữ được cấp", Toast.LENGTH_SHORT).show();
+                exportToPdf();
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Quyền lưu trữ bị từ chối")
+                        .setMessage("Không thể xuất dữ liệu do thiếu quyền lưu trữ. Bạn có muốn vào Cài đặt để bật quyền này không?")
+                        .setPositiveButton("Cài đặt", (d, w) -> {
+                            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            intent.setData(Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                        })
+                        .setNegativeButton("Hủy", null)
+                        .show();
+            }
+        }
+    }
+
+    private void exportToPdf() {
+        try {
+            String userId = auth.getCurrentUser().getUid();
+            SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy_HHmmss", Locale.getDefault());
+            String fileName = "WaterIntake_" + sdf.format(System.currentTimeMillis()) + ".pdf";
+            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+
+            PdfWriter writer = new PdfWriter(file);
+            PdfDocument pdf = new PdfDocument(writer);
+            Document document = new Document(pdf);
+
+            document.add(new Paragraph("Lich su uong nuoc")
+                    .setFontSize(18)
+                    .setBold()
+                    .setTextAlignment(TextAlignment.CENTER));
+
+            float[] columnWidths = {200, 100, 100};
+            Table table = new Table(columnWidths);
+            table.addHeaderCell(new Cell().add(new Paragraph("Loại nước").setBold()));
+            table.addHeaderCell(new Cell().add(new Paragraph("Lượng (ml)").setBold()));
+            table.addHeaderCell(new Cell().add(new Paragraph("Thời gian").setBold()));
+
+            for (DayData day : weekDays) {
+                for (WaterHistoryAdapter.WaterEntry entry : day.entries) {
+                    table.addCell(new Cell().add(new Paragraph(entry.drinkType)));
+                    table.addCell(new Cell().add(new Paragraph(String.format("%.0f", entry.amount))));
+                    SimpleDateFormat timeFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+                    table.addCell(new Cell().add(new Paragraph(timeFormat.format(entry.timestamp))));
+                }
+            }
+
+            document.add(table);
+            document.close();
+
+            Toast.makeText(this, "Đã xuất PDF: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            Log.d("StatisticsActivity", "PDF exported to: " + file.getAbsolutePath());
+        } catch (Exception e) {
+            Toast.makeText(this, "Lỗi khi xuất PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("StatisticsActivity", "PDF export error: " + e.getMessage());
+        }
     }
 
     private void fetchWaterGoal() {

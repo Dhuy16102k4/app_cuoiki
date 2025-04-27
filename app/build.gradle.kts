@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.water_app"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -27,6 +27,11 @@ android {
 }
 
 dependencies {
+    implementation("com.itextpdf:itext7-core:7.2.5")
+    implementation("org.apache.poi:poi:5.2.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
+
+
     implementation(libs.auto.value.annotations)
     annotationProcessor(libs.auto.value)
 
