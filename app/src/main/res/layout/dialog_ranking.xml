@@ -1,45 +1,76 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@android:color/white">
+    android:gravity="center_horizontal"
+    android:layout_marginHorizontal="16dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Top 3 người uống đủ nước mỗi ngày"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="#0277BD" />
-
+    <!-- Thông báo khi không có dữ liệu -->
     <TextView
         android:id="@+id/empty_text"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Không có ai đạt yêu cầu"
-        android:textSize="16sp"
-        android:textColor="#333333"
+        android:text="@string/no_ranking_data"
+        android:visibility="gone"
         android:gravity="center"
-        android:visibility="gone" />
+        android:padding="24dp"
+        android:textSize="18sp"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/ranking_recycler_view"
+    <!-- HorizontalScrollView cho Top 1, Top 2, Top 3 -->
+    <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:maxHeight="400dp" />
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:scrollbars="none">
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp"
+            android:gravity="center_vertical"> <!-- Căn giữa theo chiều dọc -->
+
+            <!-- Top 2 -->
+            <include
+                android:id="@+id/top2_item"
+                layout="@layout/item_ranking"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"/>
+
+            <!-- Top 1 (nâng cao hơn) -->
+            <include
+                android:id="@+id/top1_item"
+                layout="@layout/item_ranking"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:layout_marginTop="-64dp"/> <!-- Tăng từ -56dp lên -64dp để Top 1 cao hơn nữa -->
+
+            <!-- Top 3 -->
+            <include
+                android:id="@+id/top3_item"
+                layout="@layout/item_ranking"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"/>
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Nút đóng -->
     <Button
         android:id="@+id/close_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
+        android:layout_gravity="center"
         android:layout_marginTop="16dp"
-        android:text="Đóng"
-        android:background="@drawable/button_background"
-        android:textColor="@drawable/button_text_color" />
-
+        android:text="@string/close"
+        android:backgroundTint="#0277BD"
+        android:textColor="@android:color/white"
+        android:paddingHorizontal="32dp"
+        android:textSize="16sp"/>
 </LinearLayout>

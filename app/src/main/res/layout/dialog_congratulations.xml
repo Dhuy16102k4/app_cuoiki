@@ -1,0 +1,39 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center">
+
+    <!-- GIF chúc mừng -->
+    <ImageView
+        android:id="@+id/congrats_gif"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/congrats_gif_description" />
+
+    <!-- Thông điệp chúc mừng -->
+    <TextView
+        android:id="@+id/congrats_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/week_completion_message"
+        android:textSize="18sp"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"/>
+
+    <!-- Nút đóng -->
+    <Button
+        android:id="@+id/close_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/close"
+        android:backgroundTint="#0277BD"
+        android:textColor="@android:color/white"
+        android:paddingHorizontal="24dp"
+        android:layout_gravity="center"/>
+</LinearLayout>

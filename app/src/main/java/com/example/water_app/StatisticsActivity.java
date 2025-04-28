@@ -1,6 +1,11 @@
 package com.example.water_app;
 
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,7 +29,10 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -39,21 +47,18 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class StatisticsActivity extends BaseActivity {
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
-    private RecyclerView daysRecyclerView;
-    private DayAdapter dayAdapter;
-    private TextView weekLabel;
-    private Button prevWeekButton;
-    private Button nextWeekButton;
     private Calendar currentWeekStart;
     private double waterGoal = 2000; // Default, updated from Firestore/SharedPreferences
-    private List<DayData> weekDays = new ArrayList<>();
+    private final List<DayData> weekDays = new ArrayList<>();
     private static final int STORAGE_PERMISSION_CODE = 101;
 
     @Override
@@ -66,16 +71,23 @@ public class StatisticsActivity extends BaseActivity {
 
         // Setup Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitle("Thống kê");
+        toolbar.setTitle(R.string.statistics_title);
         setSupportActionBar(toolbar);
 
-        // Setup UI components
-        weekLabel = findViewById(R.id.week_label);
-        prevWeekButton = findViewById(R.id.prev_week_button);
-        nextWeekButton = findViewById(R.id.next_week_button);
-        daysRecyclerView = findViewById(R.id.days_recycler_view);
+        // Set white overflow icon
+        Drawable overflowIcon = toolbar.getOverflowIcon();
+        if (overflowIcon != null) {
+            overflowIcon.setColorFilter(ContextCompat.getColor(this, android.R.color.white), PorterDuff.Mode.SRC_IN);
+            toolbar.setOverflowIcon(overflowIcon);
+        }
+
+        // Setup UI components (local variables)
+        TextView weekLabel = findViewById(R.id.week_label);
+        Button prevWeekButton = findViewById(R.id.prev_week_button);
+        Button nextWeekButton = findViewById(R.id.next_week_button);
+        RecyclerView daysRecyclerView = findViewById(R.id.days_recycler_view);
+        DayAdapter dayAdapter = new DayAdapter();
         daysRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        dayAdapter = new DayAdapter();
         daysRecyclerView.setAdapter(dayAdapter);
 
         // Initialize week
@@ -106,6 +118,14 @@ public class StatisticsActivity extends BaseActivity {
             fetchWeekData();
         });
 
+        // Update week label
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        Calendar weekEnd = (Calendar) currentWeekStart.clone();
+        weekEnd.add(Calendar.DAY_OF_YEAR, 6);
+        String startDate = sdf.format(currentWeekStart.getTime());
+        String endDate = sdf.format(weekEnd.getTime());
+        weekLabel.setText(getString(R.string.week_label, startDate, endDate));
+
         // Fetch initial data
         fetchWaterGoal();
     }
@@ -120,6 +140,9 @@ public class StatisticsActivity extends BaseActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_export) {
             showExportFormatDialog();
+            return true;
+        } else if (item.getItemId() == R.id.action_ranking) {
+            fetchRankingData();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -156,13 +179,13 @@ public class StatisticsActivity extends BaseActivity {
                 != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             // Explain why permission is needed
             new AlertDialog.Builder(this)
-                    .setTitle("Yêu cầu quyền lưu trữ")
-                    .setMessage("Ứng dụng cần quyền lưu trữ để xuất dữ liệu uống nước ra file PDF. Vui lòng cấp quyền để tiếp tục.")
-                    .setPositiveButton("Cấp quyền", (d, w) -> {
+                    .setTitle(R.string.storage_permission_request_title)
+                    .setMessage(R.string.storage_permission_request_message)
+                    .setPositiveButton(R.string.settings, (d, w) -> {
                         requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
                     })
-                    .setNegativeButton("Hủy", (d, w) -> {
-                        Toast.makeText(this, "Xuất dữ liệu bị hủy do thiếu quyền lưu trữ", Toast.LENGTH_SHORT).show();
+                    .setNegativeButton(R.string.cancel, (d, w) -> {
+                        Toast.makeText(this, R.string.export_canceled, Toast.LENGTH_SHORT).show();
                     })
                     .show();
         } else {
@@ -175,18 +198,18 @@ public class StatisticsActivity extends BaseActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Quyền lưu trữ được cấp", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_SHORT).show();
                 exportToPdf();
             } else {
                 new AlertDialog.Builder(this)
-                        .setTitle("Quyền lưu trữ bị từ chối")
-                        .setMessage("Không thể xuất dữ liệu do thiếu quyền lưu trữ. Bạn có muốn vào Cài đặt để bật quyền này không?")
-                        .setPositiveButton("Cài đặt", (d, w) -> {
+                        .setTitle(R.string.permission_denied_title)
+                        .setMessage(R.string.permission_denied_message)
+                        .setPositiveButton(R.string.settings, (d, w) -> {
                             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                             intent.setData(Uri.parse("package:" + getPackageName()));
                             startActivity(intent);
                         })
-                        .setNegativeButton("Hủy", null)
+                        .setNegativeButton(R.string.cancel, null)
                         .show();
             }
         }
@@ -194,7 +217,12 @@ public class StatisticsActivity extends BaseActivity {
 
     private void exportToPdf() {
         try {
-            String userId = auth.getCurrentUser().getUid();
+            FirebaseUser currentUser = auth.getCurrentUser();
+            if (currentUser == null) {
+                Toast.makeText(this, R.string.login_required_export, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String userId = currentUser.getUid();
             SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy_HHmmss", Locale.getDefault());
             String fileName = "WaterIntake_" + sdf.format(System.currentTimeMillis()) + ".pdf";
             File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
@@ -203,7 +231,7 @@ public class StatisticsActivity extends BaseActivity {
             PdfDocument pdf = new PdfDocument(writer);
             Document document = new Document(pdf);
 
-            document.add(new Paragraph("Lich su uong nuoc")
+            document.add(new Paragraph("Lịch sử uống nước")
                     .setFontSize(18)
                     .setBold()
                     .setTextAlignment(TextAlignment.CENTER));
@@ -217,7 +245,7 @@ public class StatisticsActivity extends BaseActivity {
             for (DayData day : weekDays) {
                 for (WaterHistoryAdapter.WaterEntry entry : day.entries) {
                     table.addCell(new Cell().add(new Paragraph(entry.drinkType)));
-                    table.addCell(new Cell().add(new Paragraph(String.format("%.0f", entry.amount))));
+                    table.addCell(new Cell().add(new Paragraph(String.format(Locale.getDefault(), "%.0f", entry.amount))));
                     SimpleDateFormat timeFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
                     table.addCell(new Cell().add(new Paragraph(timeFormat.format(entry.timestamp))));
                 }
@@ -226,16 +254,205 @@ public class StatisticsActivity extends BaseActivity {
             document.add(table);
             document.close();
 
-            Toast.makeText(this, "Đã xuất PDF: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.pdf_exported, file.getAbsolutePath()), Toast.LENGTH_LONG).show();
             Log.d("StatisticsActivity", "PDF exported to: " + file.getAbsolutePath());
         } catch (Exception e) {
-            Toast.makeText(this, "Lỗi khi xuất PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.pdf_export_error, e.getMessage()), Toast.LENGTH_SHORT).show();
             Log.e("StatisticsActivity", "PDF export error: " + e.getMessage());
         }
     }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+    }
+
+    @SuppressWarnings({"ConstantConditions", "NotifyDataSetChanged"})
+    private void fetchRankingData() {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, R.string.no_network, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Use last week instead of current week for testing
+        Calendar lastWeekStart = (Calendar) currentWeekStart.clone();
+        lastWeekStart.add(Calendar.WEEK_OF_YEAR, -1); // Go back one week
+
+        long startTimestamp = lastWeekStart.getTimeInMillis();
+        Calendar lastWeekEnd = (Calendar) lastWeekStart.clone();
+        lastWeekEnd.add(Calendar.DAY_OF_YEAR, 6);
+        lastWeekEnd.set(Calendar.HOUR_OF_DAY, 23);
+        lastWeekEnd.set(Calendar.MINUTE, 59);
+        lastWeekEnd.set(Calendar.SECOND, 59);
+        lastWeekEnd.set(Calendar.MILLISECOND, 999);
+        long endTimestamp = lastWeekEnd.getTimeInMillis();
+
+        // Log the date range for debugging
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        Log.d("StatisticsActivity", "Fetching ranking for last week: " + sdf.format(lastWeekStart.getTime()) + " to " + sdf.format(lastWeekEnd.getTime()));
+
+        // Fetch all users
+        db.collection("users").get()
+                .addOnSuccessListener(userSnapshots -> {
+                    Map<String, String> userNicknames = new HashMap<>();
+                    Map<String, String> userProfileImages = new HashMap<>(); // Lưu profileImageUrl
+                    Map<String, Double> userWaterGoals = new HashMap<>();
+                    Map<String, Map<Long, Double>> userDailyTotals = new HashMap<>();
+                    Map<String, Double> userWeeklyTotals = new HashMap<>();
+
+                    // Initialize user data
+                    for (var userDoc : userSnapshots) {
+                        String userId = userDoc.getId();
+                        String nickname = userDoc.getString("nickname");
+                        String email = userDoc.getString("email");
+                        String profileImageUrl = userDoc.getString("profileImageUrl"); // Lấy profileImageUrl
+                        Double waterGoal = userDoc.getDouble("waterGoal");
+                        if (nickname == null && email != null) {
+                            nickname = email.split("@")[0]; // Fallback: Use email prefix as nickname
+                        }
+                        if (nickname != null) {
+                            userNicknames.put(userId, nickname);
+                            userProfileImages.put(userId, profileImageUrl); // Lưu profileImageUrl (có thể null)
+                            userWaterGoals.put(userId, waterGoal != null ? waterGoal : 2000.0);
+                            userDailyTotals.put(userId, new HashMap<>());
+                            userWeeklyTotals.put(userId, 0.0);
+                        } else {
+                            Log.w("StatisticsActivity", "Skipping user " + userId + ": No nickname or email");
+                        }
+                    }
+
+                    // Fetch water history for all users in the week
+                    db.collectionGroup("waterHistory")
+                            .whereGreaterThanOrEqualTo("timestamp", startTimestamp)
+                            .whereLessThanOrEqualTo("timestamp", endTimestamp)
+                            .get()
+                            .addOnSuccessListener(historySnapshots -> {
+                                // Aggregate daily totals
+                                for (var doc : historySnapshots) {
+                                    DocumentReference userDocRef = doc.getReference().getParent().getParent();
+                                    if (userDocRef == null) {
+                                        Log.w("StatisticsActivity", "Parent document is null for waterHistory entry: " + doc.getId());
+                                        continue;
+                                    }
+                                    String userId = userDocRef.getId();
+                                    Double amount = doc.getDouble("amount");
+                                    Long timestamp = doc.getLong("timestamp");
+                                    if (amount != null && timestamp != null && userDailyTotals.containsKey(userId)) {
+                                        long dayStart = getDayStartTimestamp(timestamp);
+
+                                        Map<Long, Double> dailyTotals = userDailyTotals.get(userId);
+                                        dailyTotals.put(dayStart, dailyTotals.getOrDefault(dayStart, 0.0) + amount);
+
+                                        userWeeklyTotals.put(userId, userWeeklyTotals.get(userId) + amount);
+                                    }
+                                }
+//test
+                                // double weeklyTotal = userWeeklyTotals.getOrDefault(userId, 0.0);
+                                //                                    if (weeklyTotal > 0) { // Chỉ thêm người dùng có dữ liệu
+                                //                                        rankingEntries.add(new RankingAdapter.RankingEntry(
+                                //            userId, userNicknames.get(userId), userWeeklyTotals.get(userId), userProfileImages.get(userId)));
+                                // Identify users who meet waterGoal every day
+                                List<RankingAdapter.RankingEntry> rankingEntries = new ArrayList<>();
+                                for (String userId : userNicknames.keySet()) {
+                                    double weeklyTotal = userWeeklyTotals.getOrDefault(userId, 0.0);
+                                    Map<Long, Double> dailyTotals = userDailyTotals.get(userId);
+                                    if (weeklyTotal > 0) { // Chỉ thêm người dùng có dữ liệu
+                                        rankingEntries.add(new RankingAdapter.RankingEntry(
+                                                userId, userNicknames.get(userId), userWeeklyTotals.get(userId), userProfileImages.get(userId)));
+
+                                    }
+                                    // double waterGoal = userWaterGoals.get(userId);
+                                    //boolean meetsDailyGoal = true;
+
+                                    // Check each day of the week
+//                                    Calendar dayCal = (Calendar) lastWeekStart.clone();
+//                                    for (int i = 0; i < 7; i++) {
+//                                        long dayStart = dayCal.getTimeInMillis();
+//                                        double dailyTotal = dailyTotals.getOrDefault(dayStart, 0.0);
+//                                        if (dailyTotal < waterGoal) {
+//                                            meetsDailyGoal = false;
+//                                            break;
+//                                        }
+//                                        dayCal.add(Calendar.DAY_OF_YEAR, 1);
+//                                    }
+
+                                    // Add to ranking if all days meet goal
+//                                    if (meetsDailyGoal) {
+//                                        rankingEntries.add(new RankingAdapter.RankingEntry(
+//                                                userId, userNicknames.get(userId), userWeeklyTotals.get(userId), userProfileImages.get(userId)));
+//                                    }
+                                }
+
+                                // Sort by weekly total (descending) and limit to top 3
+                                rankingEntries.sort((a, b) -> Double.compare(b.totalWater, a.totalWater));
+                                if (rankingEntries.size() > 3) {
+                                    rankingEntries = rankingEntries.subList(0, 3);
+                                }
+
+                                // Show ranking dialog
+                                showRankingDialog(rankingEntries);
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, getString(R.string.ranking_error, e.getMessage()), Toast.LENGTH_SHORT).show();
+                                Log.e("StatisticsActivity", "Error fetching ranking history: " + e.getMessage());
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, getString(R.string.users_error, e.getMessage()), Toast.LENGTH_SHORT).show();
+                    Log.e("StatisticsActivity", "Error fetching users: " + e.getMessage());
+                });
+    }
+
+
+    private long getDayStartTimestamp(long timestamp) {
+        Calendar entryCal = Calendar.getInstance();
+        entryCal.setTimeInMillis(timestamp);
+        entryCal.set(Calendar.HOUR_OF_DAY, 0);
+        entryCal.set(Calendar.MINUTE, 0);
+        entryCal.set(Calendar.SECOND, 0);
+        entryCal.set(Calendar.MILLISECOND, 0);
+        return entryCal.getTimeInMillis();
+    }
+
+    private void showRankingDialog(List<RankingAdapter.RankingEntry> rankingEntries) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_ranking, null);
+        builder.setView(dialogView);
+
+        TextView emptyText = dialogView.findViewById(R.id.empty_text);
+        View top1View = dialogView.findViewById(R.id.top1_item);
+        View top2View = dialogView.findViewById(R.id.top2_item);
+        View top3View = dialogView.findViewById(R.id.top3_item);
+        Button closeButton = dialogView.findViewById(R.id.close_button);
+
+        RankingAdapter rankingAdapter = new RankingAdapter();
+
+        if (rankingEntries.isEmpty()) {
+            emptyText.setVisibility(View.VISIBLE);
+            top1View.setVisibility(View.GONE);
+            top2View.setVisibility(View.GONE);
+            top3View.setVisibility(View.GONE);
+        } else {
+            emptyText.setVisibility(View.GONE);
+            rankingAdapter.bindRankingEntries(top1View, top2View, top3View, rankingEntries);
+        }
+
+        Log.d("StatisticsActivity", "Showing ranking dialog with " + rankingEntries.size() + " entries");
+
+        AlertDialog dialog = builder.create();
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
     private void fetchWaterGoal() {
-        String userId = auth.getCurrentUser().getUid();
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, R.string.login_required_statistics, Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        String userId = currentUser.getUid();
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(document -> {
                     Double goal = document.getDouble("waterGoal");
@@ -250,8 +467,15 @@ public class StatisticsActivity extends BaseActivity {
                 });
     }
 
+    @SuppressWarnings("NotifyDataSetChanged")
     private void fetchWeekData() {
-        String userId = auth.getCurrentUser().getUid();
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, R.string.login_required_statistics, Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        String userId = currentUser.getUid();
         Calendar weekEnd = (Calendar) currentWeekStart.clone();
         weekEnd.add(Calendar.DAY_OF_YEAR, 6);
         weekEnd.set(Calendar.HOUR_OF_DAY, 23);
@@ -261,10 +485,6 @@ public class StatisticsActivity extends BaseActivity {
 
         long startTimestamp = currentWeekStart.getTimeInMillis();
         long endTimestamp = weekEnd.getTimeInMillis();
-
-        // Update week label
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        weekLabel.setText(String.format("Tuần: %s - %s", sdf.format(currentWeekStart.getTime()), sdf.format(weekEnd.getTime())));
 
         // Fetch water history for the week
         db.collection("users").document(userId).collection("waterHistory")
@@ -281,8 +501,8 @@ public class StatisticsActivity extends BaseActivity {
                         String drinkType = doc.getString("drinkType");
                         Double amount = doc.getDouble("amount");
                         Long timestamp = doc.getLong("timestamp");
-                        if (drinkType != null && amount != null && timestamp != null) {
-                            weekEntries.add(new WaterHistoryAdapter.WaterEntry(drinkType, amount, timestamp));
+                        if (drinkType != null && timestamp != null) {
+                            weekEntries.add(new WaterHistoryAdapter.WaterEntry(drinkType, amount != null ? amount : 0.0, timestamp));
                         }
                     }
 
@@ -305,49 +525,102 @@ public class StatisticsActivity extends BaseActivity {
                         dayStart.add(Calendar.DAY_OF_YEAR, 1);
                     }
 
-                    dayAdapter.notifyDataSetChanged();
+                    RecyclerView daysRecyclerView = findViewById(R.id.days_recycler_view);
+                    DayAdapter dayAdapter = (DayAdapter) daysRecyclerView.getAdapter();
+                    if (dayAdapter != null) {
+                        // notifyDataSetChanged is used because weekDays is fully replaced
+                        dayAdapter.notifyDataSetChanged();
+                    }
                     Log.d("StatisticsActivity", "Updated weekDays with " + weekDays.size() + " days");
                     checkWeekCompletion();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi khi tải dữ liệu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.data_load_error, e.getMessage()), Toast.LENGTH_SHORT).show();
                     weekDays.clear();
-                    dayAdapter.notifyDataSetChanged();
+                    RecyclerView daysRecyclerView = findViewById(R.id.days_recycler_view);
+                    DayAdapter dayAdapter = (DayAdapter) daysRecyclerView.getAdapter();
+                    if (dayAdapter != null) {
+                        // notifyDataSetChanged is used because weekDays is fully replaced
+                        dayAdapter.notifyDataSetChanged();
+                    }
                     Log.e("StatisticsActivity", "Error fetching week data: " + e.getMessage());
                 });
     }
 
     private void checkWeekCompletion() {
-        boolean allDaysMetGoal = true;
+        // Kiểm tra xem tuần đã hoàn thành chưa (7 ngày đã qua)
         Calendar today = Calendar.getInstance();
         today.set(Calendar.HOUR_OF_DAY, 0);
         today.set(Calendar.MINUTE, 0);
         today.set(Calendar.SECOND, 0);
         today.set(Calendar.MILLISECOND, 0);
 
-        for (DayData day : weekDays) {
-            Calendar dayCal = Calendar.getInstance();
-            dayCal.setTimeInMillis(day.date);
-            dayCal.set(Calendar.HOUR_OF_DAY, 0);
-            dayCal.set(Calendar.MINUTE, 0);
-            dayCal.set(Calendar.SECOND, 0);
-            dayCal.set(Calendar.MILLISECOND, 0);
+        Calendar weekEnd = (Calendar) currentWeekStart.clone();
+        weekEnd.add(Calendar.DAY_OF_YEAR, 6); // Ngày cuối của tuần
+        weekEnd.set(Calendar.HOUR_OF_DAY, 23);
+        weekEnd.set(Calendar.MINUTE, 59);
+        weekEnd.set(Calendar.SECOND, 59);
+        weekEnd.set(Calendar.MILLISECOND, 999);
 
-            // Only check past and current days for completion
-            if (!dayCal.after(today)) {
-                if (day.totalWater < waterGoal) {
-                    allDaysMetGoal = false;
-                    break;
-                }
+        // Nếu tuần chưa kết thúc (hôm nay chưa qua ngày cuối của tuần), không hiển thị thông báo
+        if (today.before(weekEnd)) {
+            Log.d("StatisticsActivity", "Week not yet completed, skipping congratulation");
+            return;
+        }
+
+        // Kiểm tra xem cả 7 ngày có đạt mục tiêu không
+        boolean allDaysMetGoal = true;
+        if (weekDays.size() != 7) {
+            // Nếu không có đủ 7 ngày trong dữ liệu, không hiển thị thông báo
+            Log.d("StatisticsActivity", "Not enough days in weekDays: " + weekDays.size());
+            return;
+        }
+
+        for (DayData day : weekDays) {
+            if (day.totalWater < waterGoal) {
+                allDaysMetGoal = false;
+                break;
             }
         }
-        if (allDaysMetGoal && !weekDays.isEmpty()) {
-            Toast.makeText(this, "Chúc mừng! Bạn đã hoàn thành mục tiêu uống nước cả tuần!", Toast.LENGTH_LONG).show();
-            Log.d("StatisticsActivity", "All days met goal, showing toast");
+
+        // Hiển thị dialog chúc mừng nếu cả 7 ngày đều đạt mục tiêu
+        if (allDaysMetGoal) {
+            showCongratulationDialog();
+            Log.d("StatisticsActivity", "All 7 days met goal, showing congratulation dialog");
+        } else {
+            Log.d("StatisticsActivity", "Not all days met goal, skipping congratulation");
         }
     }
+    private void showCongratulationDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_congratulations, null);
+        builder.setView(dialogView);
 
-    private class DayData {
+        // Tìm các thành phần trong dialog
+        ImageView congratsGif = dialogView.findViewById(R.id.congrats_gif);
+        TextView congratsMessage = dialogView.findViewById(R.id.congrats_message);
+        Button closeButton = dialogView.findViewById(R.id.close_button);
+
+        // Tải GIF bằng Glide
+        Glide.with(this)
+                .asGif()
+                .load(R.raw.congratulations) // Thay bằng tên file GIF của bạn
+                .placeholder(R.drawable.ic_checkmark) // Hình ảnh placeholder nếu GIF chưa tải
+                .error(R.drawable.ic_red_x) // Hình ảnh nếu không tải được GIF
+                .into(congratsGif);
+
+        // Đặt thông điệp chúc mừng
+        congratsMessage.setText(R.string.week_completion_message);
+
+        // Hiển thị dialog
+        AlertDialog dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(false); // Không cho phép đóng dialog khi nhấn ngoài
+        dialog.show();
+
+        // Xử lý nút đóng
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+    }
+    private static class DayData {
         long date;
         double totalWater;
         List<WaterHistoryAdapter.WaterEntry> entries;
@@ -390,7 +663,7 @@ public class StatisticsActivity extends BaseActivity {
             DayData day = weekDays.get(position);
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
             holder.dayDate.setText(dateFormat.format(day.date));
-            holder.waterStatus.setText(String.format("%.0f ml", day.totalWater));
+            holder.waterStatus.setText(getString(R.string.water_amount, day.totalWater));
 
             // Set day name (Thứ Hai to Chủ Nhật)
             Calendar calendar = Calendar.getInstance();
@@ -453,7 +726,7 @@ public class StatisticsActivity extends BaseActivity {
         Button closeButton = dialogView.findViewById(R.id.close_button);
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        dialogTitle.setText("Lịch sử uống nước - " + sdf.format(day.date));
+        dialogTitle.setText(getString(R.string.day_history_title, sdf.format(day.date)));
 
         historyRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         WaterHistoryAdapter historyAdapter = new WaterHistoryAdapter();

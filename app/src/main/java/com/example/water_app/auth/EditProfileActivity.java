@@ -12,6 +12,7 @@ import android.util.Base64;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Toast;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
@@ -23,23 +24,24 @@ import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 public class EditProfileActivity extends BaseActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
-    private TextInputEditText emailInput, weightInput, heightInput, waterGoalText;
+    private FirebaseStorage storage;
+    private TextInputEditText emailInput, nicknameInput, weightInput, heightInput, waterGoalText; // Thêm nicknameInput
     private AutoCompleteTextView healthConditionSpinner;
     private MaterialButton updateButton;
     private ShapeableImageView profileImage;
     private String userId;
     private Uri selectedImageUri;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
-    private boolean isFormatting; // Flag to prevent recursive TextWatcher calls
+    private boolean isFormatting;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +51,7 @@ public class EditProfileActivity extends BaseActivity {
         // Initialize Firebase
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
         userId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
 
         if (userId == null) {
@@ -59,6 +62,7 @@ public class EditProfileActivity extends BaseActivity {
 
         // Initialize views
         emailInput = findViewById(R.id.emailInput);
+        nicknameInput = findViewById(R.id.nicknameInput); // Khởi tạo nicknameInput
         weightInput = findViewById(R.id.weightInput);
         heightInput = findViewById(R.id.heightInput);
         healthConditionSpinner = findViewById(R.id.healthConditionSpinner);
@@ -148,7 +152,17 @@ public class EditProfileActivity extends BaseActivity {
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(document -> {
                     if (document.exists()) {
-                        emailInput.setText(document.getString("email"));
+                        String email = document.getString("email");
+                        emailInput.setText(email);
+
+                        // Lấy nickname từ Firestore, nếu không có thì đặt mặc định từ email
+                        String nickname = document.getString("nickname");
+                        if (nickname == null && email != null) {
+                            // Lấy phần trước @ từ email
+                            nickname = email.split("@")[0];
+                        }
+                        nicknameInput.setText(nickname);
+
                         weightInput.setText(String.valueOf(document.getDouble("weight")));
                         Double height = document.getDouble("height");
                         if (height != null) {
@@ -158,12 +172,30 @@ public class EditProfileActivity extends BaseActivity {
                         }
                         healthConditionSpinner.setText(document.getString("healthCondition"), false);
                         waterGoalText.setText(String.format("%.0f", document.getDouble("waterGoal")));
-                        String profileImageBase64 = document.getString("profileImage");
-                        if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
-                            Bitmap bitmap = decodeBase64ToBitmap(profileImageBase64);
-                            profileImage.setImageBitmap(bitmap);
+
+                        // Kiểm tra nếu có profileImageUrl (dữ liệu mới)
+                        String profileImageUrl = document.getString("profileImageUrl");
+                        if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                            Glide.with(this)
+                                    .load(profileImageUrl)
+                                    .placeholder(R.drawable.ic_menu_icon)
+                                    .error(R.drawable.ic_menu_icon)
+                                    .into(profileImage);
+                        } else {
+                            // Hỗ trợ dữ liệu cũ: nếu không có profileImageUrl, kiểm tra profileImage (Base64)
+                            String profileImageBase64 = document.getString("profileImage");
+                            if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
+                                Bitmap bitmap = decodeBase64ToBitmap(profileImageBase64);
+                                profileImage.setImageBitmap(bitmap);
+                            }
                         }
                     } else {
+                        // Nếu tài liệu không tồn tại, tạo nickname mặc định từ email
+                        String email = auth.getCurrentUser().getEmail();
+                        emailInput.setText(email);
+                        if (email != null) {
+                            nicknameInput.setText(email.split("@")[0]);
+                        }
                         Toast.makeText(this, "Không tìm thấy dữ liệu", Toast.LENGTH_SHORT).show();
                     }
                 })
@@ -171,12 +203,13 @@ public class EditProfileActivity extends BaseActivity {
     }
 
     private void updateProfile() {
+        String nickname = nicknameInput.getText().toString().trim();
         String weightStr = weightInput.getText().toString().trim();
         String heightStr = heightInput.getText().toString().trim();
         String healthCondition = healthConditionSpinner.getText().toString().trim();
 
         // Validate inputs
-        if (weightStr.isEmpty() || heightStr.isEmpty() || healthCondition.isEmpty()) {
+        if (nickname.isEmpty() || weightStr.isEmpty() || heightStr.isEmpty() || healthCondition.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -204,24 +237,42 @@ public class EditProfileActivity extends BaseActivity {
 
         // Prepare updated data
         Map<String, Object> user = new HashMap<>();
+        user.put("nickname", nickname); // Lưu nickname
         user.put("weight", weight);
         user.put("height", height);
         user.put("healthCondition", healthCondition);
         user.put("waterGoal", waterGoal);
 
-        // Convert image to Base64 if selected
+        // Nếu có ảnh mới, tải lên Firebase Storage và cập nhật URL
         if (selectedImageUri != null) {
-            try {
-                String base64Image = convertImageToBase64(selectedImageUri);
-                user.put("profileImage", base64Image);
-            } catch (Exception e) {
-                Toast.makeText(this, "Lỗi xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                return;
-            }
+            uploadImageToStorage(selectedImageUri, user);
+        } else {
+            // Nếu không có ảnh mới, chỉ cập nhật Firestore
+            updateFirestore(user);
         }
+    }
 
-        // Update Firestore
-        updateFirestore(user);
+    private void uploadImageToStorage(Uri imageUri, Map<String, Object> user) {
+        // Tạo tham chiếu đến vị trí lưu trữ trong Firebase Storage
+        StorageReference storageRef = storage.getReference();
+        StorageReference profileImageRef = storageRef.child("profile_images/" + userId + "/profile.jpg");
+
+        // Tải ảnh lên Firebase Storage
+        profileImageRef.putFile(imageUri).addOnSuccessListener(taskSnapshot -> {
+            // Lấy URL của ảnh sau khi tải lên
+            profileImageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                String downloadUrl = uri.toString();
+                user.put("profileImageUrl", downloadUrl);
+                // Xóa profileImage (Base64) nếu có, vì giờ chúng ta dùng URL
+                user.put("profileImage", null);
+                // Cập nhật Firestore với URL mới
+                updateFirestore(user);
+            }).addOnFailureListener(e -> {
+                Toast.makeText(this, "Lỗi lấy URL ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Lỗi tải ảnh lên: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void updateFirestore(Map<String, Object> user) {
@@ -256,26 +307,14 @@ public class EditProfileActivity extends BaseActivity {
         return Math.max(1500, Math.min(4000, totalWater));
     }
 
-    private String convertImageToBase64(Uri imageUri) throws Exception {
-        InputStream inputStream = getContentResolver().openInputStream(imageUri);
-        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-        inputStream.close();
-
-        // Compress image to reduce size
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, byteArrayOutputStream);
-        byte[] byteArray = byteArrayOutputStream.toByteArray();
-
-        return Base64.encodeToString(byteArray, Base64.DEFAULT);
-    }
-
     private Bitmap decodeBase64ToBitmap(String base64Str) {
         byte[] decodedBytes = Base64.decode(base64Str, Base64.DEFAULT);
         return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
     }
 
     public boolean hasUnsavedChanges() {
-        return !weightInput.getText().toString().isEmpty() ||
+        return !nicknameInput.getText().toString().isEmpty() || // Kiểm tra nickname
+                !weightInput.getText().toString().isEmpty() ||
                 !heightInput.getText().toString().isEmpty() ||
                 !healthConditionSpinner.getText().toString().isEmpty() ||
                 selectedImageUri != null;

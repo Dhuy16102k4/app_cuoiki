@@ -4,5 +4,9 @@
     <item
         android:id="@+id/action_export"
         android:title="Xuất dữ liệu"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_ranking"
+        android:title="Xếp hạng"
+        app:showAsAction="never" />
 </menu>

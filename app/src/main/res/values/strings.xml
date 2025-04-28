@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">water-app</string>
     <string-array name="health_conditions">
@@ -6,4 +7,32 @@
         <item>Phụ nữ mang thai</item>
         <item>Người cao tuổi</item>
     </string-array>
+    <string name="statistics_title">Thống kê</string>
+    <string name="export_data">Xuất dữ liệu</string>
+    <string name="ranking">Xếp hạng</string>
+    <string name="no_ranking_data">Chưa có ai đạt yêu cầu để vào bảng xếp hạng.</string>
+    <string name="close">Đóng</string>
+    <string name="export_pdf">Xuất PDF</string>
+    <string name="cancel">Hủy</string>
+    <string name="storage_permission_request_title">Yêu cầu quyền lưu trữ</string>
+    <string name="storage_permission_request_message">Ứng dụng cần quyền lưu trữ để xuất dữ liệu uống nước ra file PDF. Vui lòng cấp quyền để tiếp tục.</string>
+    <string name="permission_granted">Quyền lưu trữ được cấp</string>
+    <string name="permission_denied_title">Quyền lưu trữ bị từ chối</string>
+    <string name="permission_denied_message">Không thể xuất dữ liệu do thiếu quyền lưu trữ. Bạn có muốn vào Cài đặt để bật quyền này không?</string>
+    <string name="settings">Cài đặt</string>
+    <string name="export_canceled">Xuất dữ liệu bị hủy do thiếu quyền lưu trữ</string>
+    <string name="pdf_exported">Đã xuất PDF: %s</string>
+    <string name="pdf_export_error">Lỗi khi xuất PDF: %s</string>
+    <string name="no_network">Không có kết nối mạng. Vui lòng kiểm tra lại.</string>
+    <string name="ranking_error">Lỗi khi tải dữ liệu xếp hạng: %s</string>
+    <string name="users_error">Lỗi khi tải danh sách người dùng: %s</string>
+    <string name="water_goal_error">Lỗi khi tải mục tiêu uống nước: %s</string>
+    <string name="data_load_error">Lỗi khi tải dữ liệu: %s</string>
+    <string name="week_completion_message">🎉 Tuyệt vời! Bạn đã đạt mục tiêu uống nước cả 7 ngày! 🎉</string>
+    <string name="congrats_gif_description">GIF chúc mừng hoàn thành mục tiêu</string>
+    <string name="login_required_statistics">Bạn cần đăng nhập để xem thống kê</string>
+    <string name="login_required_export">Bạn cần đăng nhập để xuất dữ liệu</string>
+    <string name="day_history_title">Lịch sử uống nước - %s</string>
+    <string name="week_label">Tuần: %1$s - %2$s</string>
+    <string name="water_amount">%.0f ml</string>
 </resources>
