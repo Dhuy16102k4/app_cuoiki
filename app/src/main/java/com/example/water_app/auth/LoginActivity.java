@@ -1,10 +1,16 @@
 package com.example.water_app.auth;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.bumptech.glide.Glide;
 import com.example.water_app.MainActivity;
 import com.example.water_app.R;
 import com.google.android.material.button.MaterialButton;
@@ -70,5 +76,51 @@ public class LoginActivity extends AppCompatActivity {
         forgotPasswordText.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, ForgotPasswordActivity.class));
         });
+    }
+
+    public static class BackgroundAdapter extends BaseAdapter {
+        private Context context;
+        private String[] backgroundUrls;
+
+        public BackgroundAdapter(Context context, String[] backgroundUrls) {
+            this.context = context;
+            this.backgroundUrls = backgroundUrls;
+        }
+
+        @Override
+        public int getCount() {
+            return backgroundUrls.length;
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return backgroundUrls[position];
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ImageView imageView;
+            if (convertView == null) {
+                imageView = new ImageView(context);
+                imageView.setLayoutParams(new ViewGroup.LayoutParams(150, 150));
+                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                imageView.setPadding(8, 8, 8, 8);
+            } else {
+                imageView = (ImageView) convertView;
+            }
+
+            Glide.with(context)
+                    .load(backgroundUrls[position])
+                    .placeholder(R.drawable.ic_menu_icon)
+                    .error(R.drawable.ic_menu_icon)
+                    .into(imageView);
+
+            return imageView;
+        }
     }
 }

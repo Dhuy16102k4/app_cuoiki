@@ -3,6 +3,7 @@ package com.example.water_app.auth;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -11,14 +12,23 @@ import android.text.TextWatcher;
 import android.util.Base64;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.example.water_app.BaseActivity;
 import com.example.water_app.R;
+import com.github.dhaval2404.colorpicker.ColorPickerDialog;
+import com.github.dhaval2404.colorpicker.listener.ColorListener;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textfield.TextInputEditText;
@@ -27,6 +37,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import android.content.DialogInterface;
+
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,13 +47,15 @@ public class EditProfileActivity extends BaseActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private FirebaseStorage storage;
-    private TextInputEditText emailInput, nicknameInput, weightInput, heightInput, waterGoalText; // Thêm nicknameInput
+    private TextInputEditText emailInput, nicknameInput, weightInput, heightInput, waterGoalText;
     private AutoCompleteTextView healthConditionSpinner;
     private MaterialButton updateButton;
     private ShapeableImageView profileImage;
     private String userId;
     private Uri selectedImageUri;
+    private Uri selectedBackgroundUri;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private ActivityResultLauncher<Intent> backgroundPickerLauncher;
     private boolean isFormatting;
 
     @Override
@@ -62,7 +77,7 @@ public class EditProfileActivity extends BaseActivity {
 
         // Initialize views
         emailInput = findViewById(R.id.emailInput);
-        nicknameInput = findViewById(R.id.nicknameInput); // Khởi tạo nicknameInput
+        nicknameInput = findViewById(R.id.nicknameInput);
         weightInput = findViewById(R.id.weightInput);
         heightInput = findViewById(R.id.heightInput);
         healthConditionSpinner = findViewById(R.id.healthConditionSpinner);
@@ -89,16 +104,15 @@ public class EditProfileActivity extends BaseActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (isFormatting) return; // Prevent recursive calls
+                if (isFormatting) return;
 
                 isFormatting = true;
                 String input = s.toString().trim();
                 if (!input.isEmpty()) {
                     try {
-                        // Remove any existing decimal points for raw integer input
                         String cleanInput = input.replace(".", "");
                         int rawHeight = Integer.parseInt(cleanInput);
-                        if (rawHeight >= 50 && rawHeight <= 300) { // 50 cm to 300 cm
+                        if (rawHeight >= 50 && rawHeight <= 300) {
                             double formattedHeight = rawHeight / 100.0;
                             String formatted = String.format("%.2f", formattedHeight);
                             if (!input.equals(formatted)) {
@@ -107,14 +121,14 @@ public class EditProfileActivity extends BaseActivity {
                             }
                         }
                     } catch (NumberFormatException e) {
-                        // Ignore invalid input; validation will handle it later
+                        // Ignore invalid input
                     }
                 }
                 isFormatting = false;
             }
         });
 
-        // Set up image picker
+        // Set up image picker for profile image
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
@@ -127,11 +141,26 @@ public class EditProfileActivity extends BaseActivity {
                     }
                 });
 
+        // Set up image picker for background
+        backgroundPickerLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        selectedBackgroundUri = result.getData().getData();
+                        applyBackground(selectedBackgroundUri);
+                    }
+                });
+
         // Profile image click listener
         findViewById(R.id.editProfileImage).setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             imagePickerLauncher.launch(intent);
         });
+
+        // Background selection button listener
+        findViewById(R.id.select_background_button).setOnClickListener(v -> showBackgroundSelectionDialog());
+
+        // Text color change button listener
+        findViewById(R.id.change_text_color_button).setOnClickListener(v -> showColorPickerDialog());
 
         // Fetch user data
         fetchUserData();
@@ -139,13 +168,13 @@ public class EditProfileActivity extends BaseActivity {
         // Update button click listener
         updateButton.setOnClickListener(v -> updateProfile());
 
-        // Thiết lập BottomNavigationView từ BaseActivity
+        // Set up BottomNavigationView
         setupBottomNavigation();
     }
 
     @Override
     protected int getSelectedNavItemId() {
-        return 0; // No item selected for EditProfileActivity
+        return 0; // No item selected
     }
 
     private void fetchUserData() {
@@ -155,10 +184,8 @@ public class EditProfileActivity extends BaseActivity {
                         String email = document.getString("email");
                         emailInput.setText(email);
 
-                        // Lấy nickname từ Firestore, nếu không có thì đặt mặc định từ email
                         String nickname = document.getString("nickname");
                         if (nickname == null && email != null) {
-                            // Lấy phần trước @ từ email
                             nickname = email.split("@")[0];
                         }
                         nicknameInput.setText(nickname);
@@ -166,14 +193,13 @@ public class EditProfileActivity extends BaseActivity {
                         weightInput.setText(String.valueOf(document.getDouble("weight")));
                         Double height = document.getDouble("height");
                         if (height != null) {
-                            // Convert meters to centimeters for display
                             int heightCm = (int) (height * 100);
                             heightInput.setText(String.valueOf(heightCm));
                         }
                         healthConditionSpinner.setText(document.getString("healthCondition"), false);
                         waterGoalText.setText(String.format("%.0f", document.getDouble("waterGoal")));
 
-                        // Kiểm tra nếu có profileImageUrl (dữ liệu mới)
+                        // Load profile image
                         String profileImageUrl = document.getString("profileImageUrl");
                         if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
                             Glide.with(this)
@@ -182,7 +208,6 @@ public class EditProfileActivity extends BaseActivity {
                                     .error(R.drawable.ic_menu_icon)
                                     .into(profileImage);
                         } else {
-                            // Hỗ trợ dữ liệu cũ: nếu không có profileImageUrl, kiểm tra profileImage (Base64)
                             String profileImageBase64 = document.getString("profileImage");
                             if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
                                 Bitmap bitmap = decodeBase64ToBitmap(profileImageBase64);
@@ -190,7 +215,6 @@ public class EditProfileActivity extends BaseActivity {
                             }
                         }
                     } else {
-                        // Nếu tài liệu không tồn tại, tạo nickname mặc định từ email
                         String email = auth.getCurrentUser().getEmail();
                         emailInput.setText(email);
                         if (email != null) {
@@ -200,6 +224,90 @@ public class EditProfileActivity extends BaseActivity {
                     }
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void showBackgroundSelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chọn hình nền");
+        builder.setItems(new String[]{"Mặc định (background5)", "Nhập hình nền tùy chỉnh"}, (dialog, which) -> {
+            if (which == 0) {
+                // Apply default background
+                applyBackground(R.drawable.background5);
+                selectedBackgroundUri = null;
+            } else {
+                // Launch image picker for custom background
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                backgroundPickerLauncher.launch(intent);
+            }
+        });
+        builder.setNegativeButton("Hủy", null);
+        builder.show();
+    }
+
+    private void applyBackground(Uri backgroundUri) {
+        ConstraintLayout layout = findViewById(R.id.constraintLayout);
+        Glide.with(this)
+                .load(backgroundUri)
+                .placeholder(R.drawable.background5)
+                .error(R.drawable.background5)
+                .into(new CustomTarget<Drawable>() {
+                    @Override
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                        layout.setBackground(resource);
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                        layout.setBackgroundResource(R.drawable.background5);
+                    }
+                });
+    }
+
+    private void applyBackground(int backgroundResId) {
+        ConstraintLayout layout = findViewById(R.id.constraintLayout);
+        Glide.with(this)
+                .load(backgroundResId)
+                .placeholder(R.drawable.background5)
+                .error(R.drawable.background5)
+                .into(new CustomTarget<Drawable>() {
+                    @Override
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                        layout.setBackground(resource);
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                        layout.setBackgroundResource(R.drawable.background5);
+                    }
+                });
+    }
+
+    private void showColorPickerDialog() {
+        new ColorPickerDialog.Builder(this)
+                .setTitle("Chọn màu chữ")
+                .setColorListener((ColorListener) (color, colorHex) -> applyTextColor(color))
+                .setPositiveButton(R.string.ok)
+                .setNegativeButton(R.string.cancel)
+                .build()
+                .show();
+    }
+
+    private void applyTextColor(int color) {
+        TextView profileTitle = findViewById(R.id.profileTitle);
+        profileTitle.setTextColor(color);
+
+        emailInput.setTextColor(color);
+        nicknameInput.setTextColor(color);
+        weightInput.setTextColor(color);
+        heightInput.setTextColor(color);
+        waterGoalText.setTextColor(color);
+        healthConditionSpinner.setTextColor(color);
+
+        updateButton.setTextColor(color);
+        MaterialButton selectBackgroundButton = findViewById(R.id.select_background_button);
+        selectBackgroundButton.setTextColor(color);
+        MaterialButton changeTextColorButton = findViewById(R.id.change_text_color_button);
+        changeTextColorButton.setTextColor(color);
     }
 
     private void updateProfile() {
@@ -217,7 +325,6 @@ public class EditProfileActivity extends BaseActivity {
         double weight, height;
         try {
             weight = Double.parseDouble(weightStr);
-            // Parse height as centimeters and convert to meters
             height = Double.parseDouble(heightStr);
             if (weight < 20 || weight > 300) {
                 Toast.makeText(this, "Cân nặng phải từ 20 kg đến 300 kg", Toast.LENGTH_SHORT).show();
@@ -237,35 +344,29 @@ public class EditProfileActivity extends BaseActivity {
 
         // Prepare updated data
         Map<String, Object> user = new HashMap<>();
-        user.put("nickname", nickname); // Lưu nickname
+        user.put("nickname", nickname);
         user.put("weight", weight);
         user.put("height", height);
         user.put("healthCondition", healthCondition);
         user.put("waterGoal", waterGoal);
 
-        // Nếu có ảnh mới, tải lên Firebase Storage và cập nhật URL
+        // Handle profile image upload
         if (selectedImageUri != null) {
             uploadImageToStorage(selectedImageUri, user);
         } else {
-            // Nếu không có ảnh mới, chỉ cập nhật Firestore
             updateFirestore(user);
         }
     }
 
     private void uploadImageToStorage(Uri imageUri, Map<String, Object> user) {
-        // Tạo tham chiếu đến vị trí lưu trữ trong Firebase Storage
         StorageReference storageRef = storage.getReference();
         StorageReference profileImageRef = storageRef.child("profile_images/" + userId + "/profile.jpg");
 
-        // Tải ảnh lên Firebase Storage
         profileImageRef.putFile(imageUri).addOnSuccessListener(taskSnapshot -> {
-            // Lấy URL của ảnh sau khi tải lên
             profileImageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                 String downloadUrl = uri.toString();
                 user.put("profileImageUrl", downloadUrl);
-                // Xóa profileImage (Base64) nếu có, vì giờ chúng ta dùng URL
                 user.put("profileImage", null);
-                // Cập nhật Firestore với URL mới
                 updateFirestore(user);
             }).addOnFailureListener(e -> {
                 Toast.makeText(this, "Lỗi lấy URL ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -286,7 +387,7 @@ public class EditProfileActivity extends BaseActivity {
 
     private double calculateWaterGoal(double weight, double height, String healthCondition) {
         double baseWater = weight * 33;
-        double heightAdjustment = height * 500; //1m uống 500ml
+        double heightAdjustment = height * 500;
         double healthAdjustment;
         switch (healthCondition) {
             case "Người tập gym":
@@ -313,10 +414,11 @@ public class EditProfileActivity extends BaseActivity {
     }
 
     public boolean hasUnsavedChanges() {
-        return !nicknameInput.getText().toString().isEmpty() || // Kiểm tra nickname
+        return !nicknameInput.getText().toString().isEmpty() ||
                 !weightInput.getText().toString().isEmpty() ||
                 !heightInput.getText().toString().isEmpty() ||
                 !healthConditionSpinner.getText().toString().isEmpty() ||
-                selectedImageUri != null;
+                selectedImageUri != null ||
+                selectedBackgroundUri != null;
     }
 }

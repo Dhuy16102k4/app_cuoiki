@@ -7,6 +7,11 @@
         <item>Phụ nữ mang thai</item>
         <item>Người cao tuổi</item>
     </string-array>
+    <string name="ok">OK</string>
+    <string name="select_background">Chọn hình nền</string>
+    <string name="background_upload_success">Đã tải hình nền lên thành công!</string>
+    <string name="background_upload_error">Lỗi khi tải hình nền: %s</string>
+    <string name="background_load_error">Lỗi khi tải hình nền: %s</string>
     <string name="statistics_title">Thống kê</string>
     <string name="export_data">Xuất dữ liệu</string>
     <string name="ranking">Xếp hạng</string>

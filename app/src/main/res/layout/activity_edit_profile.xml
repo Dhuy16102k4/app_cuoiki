@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background5">
@@ -65,6 +66,30 @@
                     android:padding="4dp"
                     app:tint="#FFFFFF" />
             </FrameLayout>
+
+            <!-- Select Background Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/select_background_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="#0277BD"
+                android:text="Chọn hình nền"
+                android:textColor="@android:color/white"
+                android:contentDescription="Chọn hình nền cho hồ sơ" />
+
+            <!-- Change Text Color Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/change_text_color_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="#0277BD"
+                android:text="Đổi màu chữ"
+                android:textColor="@android:color/white"
+                android:contentDescription="Đổi màu chữ cho giao diện" />
 
             <!-- Email -->
             <com.google.android.material.textfield.TextInputLayout
