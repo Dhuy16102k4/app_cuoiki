@@ -55,6 +55,15 @@
                     android:src="@drawable/ic_menu_icon"
                     app:shapeAppearanceOverlay="@style/CircleImageStyle" />
 
+                <!-- Huy hiệu (ở góc phải trên cùng) -->
+                <ImageView
+                    android:id="@+id/profile_frame"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_gravity="top|end"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+
                 <ImageView
                     android:id="@+id/editProfileImage"
                     android:layout_width="32dp"
@@ -67,29 +76,37 @@
                     app:tint="#FFFFFF" />
             </FrameLayout>
 
-            <!-- Select Background Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/select_background_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#0277BD"
-                android:text="Chọn hình nền"
-                android:textColor="@android:color/white"
-                android:contentDescription="Chọn hình nền cho hồ sơ" />
-
-            <!-- Change Text Color Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/change_text_color_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
+            <!-- Select Background and Change Text Color Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="95dp"
                 android:layout_marginBottom="16dp"
-                android:backgroundTint="#0277BD"
-                android:text="Đổi màu chữ"
-                android:textColor="@android:color/white"
-                android:contentDescription="Đổi màu chữ cho giao diện" />
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/select_background_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:backgroundTint="#0277BD"
+                    android:contentDescription="Chọn hình nền cho hồ sơ"
+                    android:text="Chọn hình nền"
+                    android:textColor="@android:color/white" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/change_text_color_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:backgroundTint="#0277BD"
+                    android:contentDescription="Đổi màu chữ cho giao diện"
+                    android:text="Đổi màu chữ"
+                    android:textColor="@android:color/white" />
+
+            </LinearLayout>
 
             <!-- Email -->
             <com.google.android.material.textfield.TextInputLayout

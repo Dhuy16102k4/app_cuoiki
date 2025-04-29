@@ -2,7 +2,9 @@ package com.example.water_app;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -17,6 +19,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -385,7 +388,7 @@ public class StatisticsActivity extends BaseActivity {
                                 }
 
                                 // Sort by weekly total (descending) and limit to top 3
-                                rankingEntries.sort((a, b) -> Double.compare(b.totalWater, a.totalWater));
+                                rankingEntries.sort((a, b) -> Double.compare(b.getTotalWater(), a.getTotalWater()));
                                 if (rankingEntries.size() > 3) {
                                     rankingEntries = rankingEntries.subList(0, 3);
                                 }
@@ -420,15 +423,23 @@ public class StatisticsActivity extends BaseActivity {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_ranking, null);
         builder.setView(dialogView);
 
+        // Tìm các thành phần trong dialog
         TextView emptyText = dialogView.findViewById(R.id.empty_text);
         View top1View = dialogView.findViewById(R.id.top1_item);
         View top2View = dialogView.findViewById(R.id.top2_item);
         View top3View = dialogView.findViewById(R.id.top3_item);
         Button closeButton = dialogView.findViewById(R.id.close_button);
 
+        // Kiểm tra null để tránh crash
+        if (emptyText == null || top1View == null || top2View == null || top3View == null || closeButton == null) {
+            Log.e("StatisticsActivity", "One or more views in dialog_ranking.xml are null");
+            Toast.makeText(this, "Lỗi hiển thị bảng xếp hạng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         RankingAdapter rankingAdapter = new RankingAdapter();
 
-        if (rankingEntries.isEmpty()) {
+        if (rankingEntries == null || rankingEntries.isEmpty()) {
             emptyText.setVisibility(View.VISIBLE);
             top1View.setVisibility(View.GONE);
             top2View.setVisibility(View.GONE);
@@ -438,9 +449,17 @@ public class StatisticsActivity extends BaseActivity {
             rankingAdapter.bindRankingEntries(top1View, top2View, top3View, rankingEntries);
         }
 
-        Log.d("StatisticsActivity", "Showing ranking dialog with " + rankingEntries.size() + " entries");
+        Log.d("StatisticsActivity", "Showing ranking dialog with " + (rankingEntries != null ? rankingEntries.size() : 0) + " entries");
 
         AlertDialog dialog = builder.create();
+
+        // Tùy chỉnh kích thước dialog
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT)); // Background trong suốt để thấy background của dialog
+        WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+        params.width = WindowManager.LayoutParams.WRAP_CONTENT; // Chiều rộng dựa trên nội dung
+        params.height = WindowManager.LayoutParams.WRAP_CONTENT; // Chiều cao dựa trên nội dung
+        dialog.getWindow().setAttributes(params);
+
         closeButton.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
@@ -605,7 +624,7 @@ public class StatisticsActivity extends BaseActivity {
         Glide.with(this)
                 .asGif()
                 .load(R.raw.congratulations) // Thay bằng tên file GIF của bạn
-                .placeholder(R.drawable.ic_checkmark) // Hình ảnh placeholder nếu GIF chưa tải
+                .placeholder(R.drawable.check_mark) // Hình ảnh placeholder nếu GIF chưa tải
                 .error(R.drawable.ic_red_x) // Hình ảnh nếu không tải được GIF
                 .into(congratsGif);
 
@@ -689,14 +708,15 @@ public class StatisticsActivity extends BaseActivity {
             if (dayCal.before(today)) {
                 // Past day
                 holder.statusIcon.setImageResource(
-                        day.totalWater >= waterGoal ? R.drawable.ic_checkmark : R.drawable.ic_red_x
+                        day.totalWater >= waterGoal ? R.drawable.check_mark : R.drawable.ic_red_x
                 );
             } else if (dayCal.equals(today)) {
                 // Current day
                 holder.statusIcon.setImageResource(
-                        day.totalWater >= waterGoal ? R.drawable.ic_checkmark : R.drawable.ic_loading
+                        day.totalWater >= waterGoal ? R.drawable.check_mark : R.drawable.ic_loading
                 );
             } else {
+
                 // Future day
                 holder.statusIcon.setImageResource(R.drawable.ic_loading);
             }

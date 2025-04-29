@@ -1,17 +1,23 @@
 package com.example.water_app.auth;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
+import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,14 +39,17 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
-import android.content.DialogInterface;
-
-
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class EditProfileActivity extends BaseActivity {
@@ -51,12 +60,14 @@ public class EditProfileActivity extends BaseActivity {
     private AutoCompleteTextView healthConditionSpinner;
     private MaterialButton updateButton;
     private ShapeableImageView profileImage;
+    private ImageView profileFrame;
     private String userId;
     private Uri selectedImageUri;
     private Uri selectedBackgroundUri;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
     private ActivityResultLauncher<Intent> backgroundPickerLauncher;
     private boolean isFormatting;
+    private Calendar currentWeekStart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +86,15 @@ public class EditProfileActivity extends BaseActivity {
             return;
         }
 
+        // Initialize currentWeekStart
+        currentWeekStart = Calendar.getInstance();
+        currentWeekStart.setFirstDayOfWeek(Calendar.MONDAY);
+        currentWeekStart.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+        currentWeekStart.set(Calendar.HOUR_OF_DAY, 0);
+        currentWeekStart.set(Calendar.MINUTE, 0);
+        currentWeekStart.set(Calendar.SECOND, 0);
+        currentWeekStart.set(Calendar.MILLISECOND, 0);
+
         // Initialize views
         emailInput = findViewById(R.id.emailInput);
         nicknameInput = findViewById(R.id.nicknameInput);
@@ -84,6 +104,7 @@ public class EditProfileActivity extends BaseActivity {
         waterGoalText = findViewById(R.id.waterGoalText);
         updateButton = findViewById(R.id.updateButton);
         profileImage = findViewById(R.id.profileImage);
+        profileFrame = findViewById(R.id.profile_frame);
 
         // Set up health condition dropdown
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
@@ -162,8 +183,9 @@ public class EditProfileActivity extends BaseActivity {
         // Text color change button listener
         findViewById(R.id.change_text_color_button).setOnClickListener(v -> showColorPickerDialog());
 
-        // Fetch user data
+        // Fetch user data and check ranking
         fetchUserData();
+        checkUserRanking();
 
         // Update button click listener
         updateButton.setOnClickListener(v -> updateProfile());
@@ -226,16 +248,188 @@ public class EditProfileActivity extends BaseActivity {
                 .addOnFailureListener(e -> Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
+    // Kiểm tra xếp hạng của người dùng hiện tại (tương tự fetchRankingData trong StatisticsActivity)
+    @SuppressWarnings({"ConstantConditions", "NotifyDataSetChanged"})
+    private void checkUserRanking() {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, R.string.no_network, Toast.LENGTH_SHORT).show();
+            applyProfileFrame(-1);
+            return;
+        }
+
+        // Use last week instead of current week for ranking
+        Calendar lastWeekStart = (Calendar) currentWeekStart.clone();
+        lastWeekStart.add(Calendar.WEEK_OF_YEAR, -1); // Go back one week
+
+        long startTimestamp = lastWeekStart.getTimeInMillis();
+        Calendar lastWeekEnd = (Calendar) lastWeekStart.clone();
+        lastWeekEnd.add(Calendar.DAY_OF_YEAR, 6);
+        lastWeekEnd.set(Calendar.HOUR_OF_DAY, 23);
+        lastWeekEnd.set(Calendar.MINUTE, 59);
+        lastWeekEnd.set(Calendar.SECOND, 59);
+        lastWeekEnd.set(Calendar.MILLISECOND, 999);
+        long endTimestamp = lastWeekEnd.getTimeInMillis();
+
+        // Log the date range for debugging
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        Log.d("EditProfileActivity", "Fetching ranking for last week: " + sdf.format(lastWeekStart.getTime()) + " to " + sdf.format(lastWeekEnd.getTime()));
+
+        // Fetch all users
+        db.collection("users").get()
+                .addOnSuccessListener(userSnapshots -> {
+                    Map<String, String> userNicknames = new HashMap<>();
+                    Map<String, Double> userWeeklyTotals = new HashMap<>();
+
+                    // Initialize user data
+                    for (var userDoc : userSnapshots) {
+                        String userId = userDoc.getId();
+                        String nickname = userDoc.getString("nickname");
+                        String email = userDoc.getString("email");
+                        if (nickname == null && email != null) {
+                            nickname = email.split("@")[0]; // Fallback: Use email prefix as nickname
+                        }
+                        if (nickname != null) {
+                            userNicknames.put(userId, nickname);
+                            userWeeklyTotals.put(userId, 0.0);
+                        } else {
+                            Log.w("EditProfileActivity", "Skipping user " + userId + ": No nickname or email");
+                        }
+                    }
+
+                    // Fetch water history for all users in the week
+                    db.collectionGroup("waterHistory")
+                            .whereGreaterThanOrEqualTo("timestamp", startTimestamp)
+                            .whereLessThanOrEqualTo("timestamp", endTimestamp)
+                            .get()
+                            .addOnSuccessListener(historySnapshots -> {
+                                // Aggregate weekly totals
+                                for (var doc : historySnapshots) {
+                                    DocumentReference userDocRef = doc.getReference().getParent().getParent();
+                                    if (userDocRef == null) {
+                                        Log.w("EditProfileActivity", "Parent document is null for waterHistory entry: " + doc.getId());
+                                        continue;
+                                    }
+                                    String userId = userDocRef.getId();
+                                    Double amount = doc.getDouble("amount");
+                                    Long timestamp = doc.getLong("timestamp");
+                                    if (amount != null && timestamp != null && userWeeklyTotals.containsKey(userId)) {
+                                        userWeeklyTotals.put(userId, userWeeklyTotals.get(userId) + amount);
+                                    }
+                                }
+
+                                // Create ranking entries
+                                List<RankingEntry> rankingEntries = new ArrayList<>();
+                                for (String userId : userNicknames.keySet()) {
+                                    double weeklyTotal = userWeeklyTotals.getOrDefault(userId, 0.0);
+                                    if (weeklyTotal > 0) { // Chỉ thêm người dùng có dữ liệu
+                                        rankingEntries.add(new RankingEntry(userId, userNicknames.get(userId), weeklyTotal));
+                                    }
+                                }
+
+                                // Sort by weekly total (descending) and limit to top 3
+                                rankingEntries.sort((a, b) -> Double.compare(b.getTotalWater(), a.getTotalWater()));
+                                if (rankingEntries.size() > 3) {
+                                    rankingEntries = rankingEntries.subList(0, 3);
+                                }
+
+                                // Determine the rank of the current user
+                                int rank = -1;
+                                for (int i = 0; i < rankingEntries.size(); i++) {
+                                    if (rankingEntries.get(i).getUserId().equals(userId)) {
+                                        rank = i + 1; // Rank starts at 1
+                                        Log.d("EditProfileActivity", "Current user found at rank: " + rank);
+                                        break;
+                                    }
+                                }
+                                if (rank == -1) {
+                                    Log.d("EditProfileActivity", "Current user not in Top 3");
+                                }
+
+                                // Apply the badge based on rank
+                                applyProfileFrame(rank);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("EditProfileActivity", "Error fetching water history: " + e.getMessage());
+                                Toast.makeText(this, "Lỗi tải lịch sử nước: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                applyProfileFrame(-1);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("EditProfileActivity", "Error fetching users: " + e.getMessage());
+                    Toast.makeText(this, "Lỗi tải danh sách người dùng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    applyProfileFrame(-1);
+                });
+    }
+
+    // Helper class to store ranking entries
+    private static class RankingEntry {
+        private final String userId;
+        private final String nickname;
+        private final double totalWater;
+
+        public RankingEntry(String userId, String nickname, double totalWater) {
+            this.userId = userId;
+            this.nickname = nickname;
+            this.totalWater = totalWater;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public String getNickname() {
+            return nickname;
+        }
+
+        public double getTotalWater() {
+            return totalWater;
+        }
+    }
+
+    // Check network availability
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+    // Áp dụng huy hiệu cho ảnh profile dựa trên xếp hạng
+    private void applyProfileFrame(int rank) {
+        if (profileFrame == null) {
+            Log.e("EditProfileActivity", "profileFrame is null");
+            return;
+        }
+
+        Log.d("EditProfileActivity", "Applying badge for rank: " + rank);
+        profileFrame.setVisibility(View.VISIBLE);
+        switch (rank) {
+            case 1:
+                profileFrame.setImageResource(R.drawable.badge_top1);
+                Log.d("EditProfileActivity", "Set badge_top1.png");
+                break;
+            case 2:
+                profileFrame.setImageResource(R.drawable.badge_top2);
+                Log.d("EditProfileActivity", "Set badge_top2.png");
+                break;
+            case 3:
+                profileFrame.setImageResource(R.drawable.badge_top3);
+                Log.d("EditProfileActivity", "Set badge_top3.png");
+                break;
+            default:
+                profileFrame.setVisibility(View.GONE);
+                Log.d("EditProfileActivity", "Hid badge (not in Top 3)");
+                break;
+        }
+    }
+
     private void showBackgroundSelectionDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Chọn hình nền");
         builder.setItems(new String[]{"Mặc định (background5)", "Nhập hình nền tùy chỉnh"}, (dialog, which) -> {
             if (which == 0) {
-                // Apply default background
                 applyBackground(R.drawable.background5);
                 selectedBackgroundUri = null;
             } else {
-                // Launch image picker for custom background
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 backgroundPickerLauncher.launch(intent);
             }
@@ -316,7 +510,6 @@ public class EditProfileActivity extends BaseActivity {
         String heightStr = heightInput.getText().toString().trim();
         String healthCondition = healthConditionSpinner.getText().toString().trim();
 
-        // Validate inputs
         if (nickname.isEmpty() || weightStr.isEmpty() || heightStr.isEmpty() || healthCondition.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
             return;
@@ -339,10 +532,8 @@ public class EditProfileActivity extends BaseActivity {
             return;
         }
 
-        // Calculate new water goal
         double waterGoal = calculateWaterGoal(weight, height, healthCondition);
 
-        // Prepare updated data
         Map<String, Object> user = new HashMap<>();
         user.put("nickname", nickname);
         user.put("weight", weight);
@@ -350,12 +541,14 @@ public class EditProfileActivity extends BaseActivity {
         user.put("healthCondition", healthCondition);
         user.put("waterGoal", waterGoal);
 
-        // Handle profile image upload
         if (selectedImageUri != null) {
             uploadImageToStorage(selectedImageUri, user);
         } else {
             updateFirestore(user);
         }
+
+        // Cập nhật lại xếp hạng sau khi update profile
+        checkUserRanking();
     }
 
     private void uploadImageToStorage(Uri imageUri, Map<String, Object> user) {

@@ -3,6 +3,7 @@ package com.example.water_app;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -80,7 +81,11 @@ public class MainActivity extends BaseActivity {
             }
             return false;
         });
-
+        Drawable overflowIcon = toolbar.getOverflowIcon();
+        if (overflowIcon != null) {
+            overflowIcon.setTint(getResources().getColor(android.R.color.white, null));
+            toolbar.setOverflowIcon(overflowIcon);
+        }
         // Initialize UI components
         waterProgressBar = findViewById(R.id.waterProgressBar);
         waterStatusText = findViewById(R.id.waterStatusText);

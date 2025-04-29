@@ -18,7 +18,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         app:title="Water Reminder"
-        app:titleTextColor="#FFFFFF" />
+        app:titleTextColor="#FFFFFF"
+        app:navigationIconTint="@android:color/white" />
 
     <!-- Nội dung chính -->
     <LinearLayout
@@ -106,7 +107,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/history"
-
                 android:clipToPadding="false"
                 android:padding="8dp" />
         </androidx.cardview.widget.CardView>
@@ -144,7 +144,6 @@
         </LinearLayout>
     </FrameLayout>
 
-
     <!-- Bottom Navigation View -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
@@ -161,4 +160,3 @@
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

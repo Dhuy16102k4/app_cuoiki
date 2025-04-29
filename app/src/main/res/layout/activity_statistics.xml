@@ -10,7 +10,8 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#0277BD" />
+        android:background="#0277BD"
+        app:titleTextColor="#FFFFFF" />
 
     <LinearLayout
         android:id="@+id/week_navigation"

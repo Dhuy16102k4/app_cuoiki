@@ -1,78 +1,97 @@
-<LinearLayout
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center_horizontal"
-    android:layout_marginHorizontal="16dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
 
-    >
-
-    <!-- Thông báo khi không có dữ liệu -->
-    <TextView
-        android:id="@+id/empty_text"
+    <!-- Background ImageView -->
+    <ImageView
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/no_ranking_data"
-        android:visibility="gone"
-        android:gravity="center"
-        android:padding="24dp"
-        android:textSize="18sp"/>
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ranking_dialog" />
 
-    <!-- HorizontalScrollView cho Top 1, Top 2, Top 3 -->
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:scrollbars="none">
+    <!-- Nội dung chính -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginHorizontal="16dp"
+        android:background="@android:color/transparent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <LinearLayout
+        <!-- Thông báo khi không có dữ liệu -->
+        <TextView
+            android:id="@+id/empty_text"
+            style="@style/TextAppearance.MaterialComponents.Subtitle1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp"
-            android:gravity="center_vertical"> <!-- Căn giữa theo chiều dọc -->
+            android:gravity="center"
+            android:padding="24dp"
+            android:text="@string/no_ranking_data"
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:visibility="gone" />
 
-            <!-- Top 2 -->
-            <include
-                android:id="@+id/top2_item"
-                layout="@layout/item_ranking"
-                android:layout_width="150dp"
+        <!-- HorizontalScrollView cho Top 1, Top 2, Top 3 -->
+        <HorizontalScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_margin="8dp"/>
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
 
-            <!-- Top 1 (nâng cao hơn) -->
-            <include
-                android:id="@+id/top1_item"
-                layout="@layout/item_ranking"
-                android:layout_width="150dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:layout_marginTop="-64dp"/> <!-- Tăng từ -56dp lên -64dp để Top 1 cao hơn nữa -->
+                <!-- Top 2 -->
+                <include
+                    android:id="@+id/top2_item"
+                    layout="@layout/item_ranking_top2"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp" />
 
-            <!-- Top 3 -->
-            <include
-                android:id="@+id/top3_item"
-                layout="@layout/item_ranking"
-                android:layout_width="150dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"/>
+                <!-- Top 1 (nâng cao hơn) -->
+                <include
+                    android:id="@+id/top1_item"
+                    layout="@layout/item_ranking_top1"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:layout_marginTop="-72dp" />
 
-        </LinearLayout>
-    </HorizontalScrollView>
+                <!-- Top 3 -->
+                <include
+                    android:id="@+id/top3_item"
+                    layout="@layout/item_ranking_top3"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp" />
+            </LinearLayout>
+        </HorizontalScrollView>
 
-    <!-- Nút đóng -->
-    <Button
-        android:id="@+id/close_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="16dp"
-        android:text="@string/close"
-        android:backgroundTint="#0277BD"
-        android:textColor="@android:color/white"
-        android:paddingHorizontal="32dp"
-        android:textSize="16sp"/>
-</LinearLayout>
+        <!-- Nút đóng -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/close_button"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:background="#D90707"
+
+            android:paddingHorizontal="32dp"
+            android:text="@string/close"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            app:backgroundTint="#433D39" />
+    </LinearLayout>
+</FrameLayout>
