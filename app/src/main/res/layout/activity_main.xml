@@ -34,6 +34,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Current Date -->
+        <TextView
+            android:id="@+id/currentDateText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:text=""
+            android:textColor="#FFFFFF"
+            android:textSize="18sp" />
+
         <!-- Card: Progress và Thông tin -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"

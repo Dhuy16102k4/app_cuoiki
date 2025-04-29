@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.widget.Toolbar;
@@ -19,6 +20,7 @@ import com.example.water_app.auth.LoginActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class MainActivity extends BaseActivity {
@@ -29,6 +31,7 @@ public class MainActivity extends BaseActivity {
     private Button addWaterButton;
     private RecyclerView waterHistoryRecyclerView;
     private WaterHistoryAdapter waterHistoryAdapter;
+    private TextView currentDateText;
     private double waterGoal = 0;
     private double drankWater = 0;
     private boolean hasShownToast = false;
@@ -75,6 +78,14 @@ public class MainActivity extends BaseActivity {
                 return true;
             } else if (id == R.id.menu_logout) {
                 auth.signOut();
+                // Reset state
+                waterGoal = 0;
+                drankWater = 0;
+                waterEntries.clear();
+                hasShownToast = false;
+                prefs.edit().clear().apply();
+                waterHistoryAdapter.setWaterEntries(waterEntries);
+                updateWaterStatus();
                 startActivity(new Intent(this, LoginActivity.class));
                 finish();
                 return true;
@@ -86,25 +97,44 @@ public class MainActivity extends BaseActivity {
             overflowIcon.setTint(getResources().getColor(android.R.color.white, null));
             toolbar.setOverflowIcon(overflowIcon);
         }
+
         // Initialize UI components
         waterProgressBar = findViewById(R.id.waterProgressBar);
         waterStatusText = findViewById(R.id.waterStatusText);
         addWaterButton = findViewById(R.id.addWaterButton);
         waterHistoryRecyclerView = findViewById(R.id.waterHistoryRecyclerView);
+        currentDateText = findViewById(R.id.currentDateText);
 
         waterHistoryRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         waterHistoryAdapter = new WaterHistoryAdapter();
         waterHistoryRecyclerView.setAdapter(waterHistoryAdapter);
 
+        // Set current date
+        updateCurrentDate();
+
         setupBottomNavigation();
 
         // Reset hasShownToast daily
         resetDailyToastFlag();
-        //test data
-        //importTestWaterData();
+
         // Fetch data and update UI
         fetchWaterData();
         addWaterButton.setOnClickListener(v -> showAddWaterDialog());
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (auth.getCurrentUser() != null) {
+            fetchWaterData();
+            updateCurrentDate();
+        }
+    }
+
+    private void updateCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        String currentDate = sdf.format(new Date());
+        currentDateText.setText(currentDate);
     }
 
     private void resetDailyToastFlag() {
@@ -113,7 +143,6 @@ public class MainActivity extends BaseActivity {
         Calendar lastResetCal = Calendar.getInstance();
         lastResetCal.setTimeInMillis(lastReset);
 
-        // Reset if it's a new day
         if (now.get(Calendar.DAY_OF_YEAR) != lastResetCal.get(Calendar.DAY_OF_YEAR) ||
                 now.get(Calendar.YEAR) != lastResetCal.get(Calendar.YEAR)) {
             hasShownToast = false;
@@ -127,88 +156,76 @@ public class MainActivity extends BaseActivity {
 
     private void fetchWaterData() {
         String userId = auth.getCurrentUser().getUid();
-
-        // Fetch water goal
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(document -> {
                     if (document.exists()) {
                         Double goal = document.getDouble("waterGoal");
                         waterGoal = goal != null ? goal : 2000;
+                        Log.d("MainActivity", "Water goal fetched: " + waterGoal);
                     } else {
                         waterGoal = 2000;
+                        Log.d("MainActivity", "No document found, using default water goal: 2000");
                     }
-                    // Fetch history after goal is set
                     fetchWaterHistory();
                 })
                 .addOnFailureListener(e -> {
                     waterGoal = 2000;
+                    Log.e("MainActivity", "Error fetching water goal: " + e.getMessage());
                     fetchWaterHistory();
                 });
     }
-    //import data test
+
     private void importTestWaterData() {
         String userId = auth.getCurrentUser().getUid();
-
-        // Reset cờ test_data_imported để import lại dữ liệu mới
         prefs.edit().putBoolean("test_data_imported", false).apply();
-
-        // Kiểm tra xem dữ liệu test đã được thêm chưa
         boolean isTestDataImported = prefs.getBoolean("test_data_imported", false);
         if (isTestDataImported) {
-            return; // Nếu đã import rồi thì không làm gì
+            return;
         }
 
-        // Định nghĩa thời gian bắt đầu (20/04/2025) và kết thúc (27/04/2025)
         Calendar calendar = Calendar.getInstance();
-        calendar.set(2025, Calendar.APRIL, 20, 0, 0, 0); // 20/04/2025
+        calendar.set(2025, Calendar.APRIL, 20, 0, 0, 0);
         Calendar endDate = Calendar.getInstance();
-        endDate.set(2025, Calendar.APRIL, 27, 23, 59, 59); // 27/04/2025
+        endDate.set(2025, Calendar.APRIL, 27, 23, 59, 59);
 
-        // Loại đồ uống và lượng nước (tổng 2800 ml/ngày)
         String[] drinkTypes = {"Nước lọc", "Trà", "Nước lọc"};
-        double[] amounts = {1000, 1000, 800}; // Tổng: 1000 + 1000 + 800 = 2800 ml
-        int[] hours = {8, 12, 18}; // Sáng 8h, Trưa 12h, Tối 18h
+        double[] amounts = {1000, 1000, 800};
+        int[] hours = {8, 12, 18};
 
-        // Duyệt qua các ngày từ 20/04/2025 đến 27/04/2025
         while (calendar.getTimeInMillis() <= endDate.getTimeInMillis()) {
-            for (int i = 0; i < 3; i++) { // 3 lần uống mỗi ngày
-                // Tạo timestamp cho lần uống
+            for (int i = 0; i < 3; i++) {
                 calendar.set(Calendar.HOUR_OF_DAY, hours[i]);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 long timestamp = calendar.getTimeInMillis();
-
-                // Tính lượng nước tương đương
                 double waterEquivalent = calculateWaterEquivalent(drinkTypes[i], amounts[i]);
-
-                // Tạo dữ liệu cho lần uống
                 Map<String, Object> waterEntry = new HashMap<>();
                 waterEntry.put("drinkType", drinkTypes[i]);
                 waterEntry.put("amount", waterEquivalent);
                 waterEntry.put("timestamp", timestamp);
 
-                // Thêm vào sub-collection "waterHistory" của user
                 db.collection("users").document(userId).collection("waterHistory")
-                        .document("test_" + timestamp) // ID duy nhất dựa trên timestamp
+                        .document("test_" + timestamp)
                         .set(waterEntry)
                         .addOnSuccessListener(aVoid -> {
-
+                            Log.d("MainActivity", "Test data imported: " + timestamp);
                         })
                         .addOnFailureListener(e -> {
-
+                            Log.e("MainActivity", "Error importing test data: " + e.getMessage());
                         });
             }
-            // Tăng ngày lên 1
             calendar.add(Calendar.DAY_OF_MONTH, 1);
         }
-
-        // Đánh dấu là đã import dữ liệu test
         prefs.edit().putBoolean("test_data_imported", true).apply();
     }
+
     private void fetchWaterHistory() {
         String userId = auth.getCurrentUser().getUid();
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
         long startOfDay = calendar.getTimeInMillis();
         long endOfDay = startOfDay + 24 * 60 * 60 * 1000 - 1;
 
@@ -216,8 +233,15 @@ public class MainActivity extends BaseActivity {
                 .whereGreaterThanOrEqualTo("timestamp", startOfDay)
                 .whereLessThanOrEqualTo("timestamp", endOfDay)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
+                .addSnapshotListener((querySnapshot, error) -> {
+                    if (error != null) {
+                        Log.e("MainActivity", "Error fetching water history: " + error.getMessage());
+                        waterEntries.clear();
+                        drankWater = 0;
+                        waterHistoryAdapter.setWaterEntries(waterEntries);
+                        updateWaterStatus();
+                        return;
+                    }
                     waterEntries.clear();
                     drankWater = 0;
                     for (var doc : querySnapshot) {
@@ -231,12 +255,7 @@ public class MainActivity extends BaseActivity {
                     }
                     waterHistoryAdapter.setWaterEntries(waterEntries);
                     updateWaterStatus();
-                })
-                .addOnFailureListener(e -> {
-                    waterEntries.clear();
-                    drankWater = 0;
-                    waterHistoryAdapter.setWaterEntries(waterEntries);
-                    updateWaterStatus();
+                    Log.d("MainActivity", "Water history updated: " + waterEntries.size() + " entries");
                 });
     }
 
@@ -246,9 +265,7 @@ public class MainActivity extends BaseActivity {
         builder.setView(dialogView);
 
         CardView cardWater = dialogView.findViewById(R.id.cardWater);
-        CardView cardTea =
-
-                dialogView.findViewById(R.id.cardTea);
+        CardView cardTea = dialogView.findViewById(R.id.cardTea);
         CardView cardCoffee = dialogView.findViewById(R.id.cardCoffee);
         CardView cardMilk = dialogView.findViewById(R.id.cardMilk);
         Button amount200ml = dialogView.findViewById(R.id.amount200ml);
@@ -336,12 +353,7 @@ public class MainActivity extends BaseActivity {
         db.collection("users").document(userId).collection("waterHistory")
                 .add(entry)
                 .addOnSuccessListener(docRef -> {
-                    drankWater += amount;
-                    waterEntries.add(0, new WaterHistoryAdapter.WaterEntry(drinkType, amount, System.currentTimeMillis()));
-                    waterHistoryAdapter.setWaterEntries(waterEntries);
-                    updateWaterStatus();
                     Toast.makeText(this, "Đã thêm " + amount + "ml " + drinkType, Toast.LENGTH_SHORT).show();
-
                     SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
                     boolean isSoundEnabled = prefs.getBoolean("sound_enabled", true);
                     if (isSoundEnabled) {
@@ -352,11 +364,11 @@ public class MainActivity extends BaseActivity {
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Lỗi khi lưu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e("MainActivity", "Error saving water entry: " + e.getMessage());
                 });
     }
 
     private void updateWaterStatus() {
-        // Only update if data is valid
         if (waterGoal <= 0) {
             waterStatusText.setText("Đang tải dữ liệu...");
             waterProgressBar.setProgress(0);
@@ -367,14 +379,12 @@ public class MainActivity extends BaseActivity {
         int progress = (int) ((drankWater / waterGoal) * 100);
         waterProgressBar.setProgress(Math.min(progress, 100));
 
-        // Show toast only once per day when goal is reached
         if (drankWater >= waterGoal && !hasShownToast) {
             Toast.makeText(this, "Chúc mừng! Bạn đã uống đủ nước hôm nay!", Toast.LENGTH_LONG).show();
             hasShownToast = true;
             prefs.edit().putBoolean("has_shown_toast", true).apply();
         }
 
-        // Show GIF only if goal is exceeded and toast has been shown
         if (drankWater > waterGoal && hasShownToast) {
             showCongratulationGif();
         }

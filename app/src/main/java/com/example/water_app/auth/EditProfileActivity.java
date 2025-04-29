@@ -40,6 +40,7 @@ import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -64,6 +65,7 @@ public class EditProfileActivity extends BaseActivity {
     private String userId;
     private Uri selectedImageUri;
     private Uri selectedBackgroundUri;
+    private int selectedTextColor; // Store the selected text color
     private ActivityResultLauncher<Intent> imagePickerLauncher;
     private ActivityResultLauncher<Intent> backgroundPickerLauncher;
     private boolean isFormatting;
@@ -236,19 +238,44 @@ public class EditProfileActivity extends BaseActivity {
                                 profileImage.setImageBitmap(bitmap);
                             }
                         }
+
+                        // Load background image
+                        String backgroundImageUrl = document.getString("backgroundImageUrl");
+                        if (backgroundImageUrl != null && !backgroundImageUrl.isEmpty()) {
+                            applyBackground(Uri.parse(backgroundImageUrl));
+                        } else {
+                            applyBackground(R.drawable.background5); // Default background
+                        }
+
+                        // Load text color
+                        Long textColor = document.getLong("textColor");
+                        if (textColor != null) {
+                            selectedTextColor = textColor.intValue();
+                            applyTextColor(selectedTextColor);
+                        } else {
+                            selectedTextColor = 0xFFFFFFFF; // Default to white
+                            applyTextColor(selectedTextColor);
+                        }
                     } else {
                         String email = auth.getCurrentUser().getEmail();
                         emailInput.setText(email);
                         if (email != null) {
                             nicknameInput.setText(email.split("@")[0]);
                         }
+                        applyBackground(R.drawable.background5); // Default background
+                        selectedTextColor = 0xFFFFFFFF; // Default text color (white)
+                        applyTextColor(selectedTextColor);
                         Toast.makeText(this, "Không tìm thấy dữ liệu", Toast.LENGTH_SHORT).show();
                     }
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    applyBackground(R.drawable.background5); // Default background
+                    selectedTextColor = 0xFFFFFFFF; // Default text color (white)
+                    applyTextColor(selectedTextColor);
+                });
     }
 
-    // Kiểm tra xếp hạng của người dùng hiện tại (tương tự fetchRankingData trong StatisticsActivity)
     @SuppressWarnings({"ConstantConditions", "NotifyDataSetChanged"})
     private void checkUserRanking() {
         if (!isNetworkAvailable()) {
@@ -321,7 +348,7 @@ public class EditProfileActivity extends BaseActivity {
                                 List<RankingEntry> rankingEntries = new ArrayList<>();
                                 for (String userId : userNicknames.keySet()) {
                                     double weeklyTotal = userWeeklyTotals.getOrDefault(userId, 0.0);
-                                    if (weeklyTotal > 0) { // Chỉ thêm người dùng có dữ liệu
+                                    if (weeklyTotal > 0) { // Only add users with data
                                         rankingEntries.add(new RankingEntry(userId, userNicknames.get(userId), weeklyTotal));
                                     }
                                 }
@@ -393,7 +420,7 @@ public class EditProfileActivity extends BaseActivity {
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-    // Áp dụng huy hiệu cho ảnh profile dựa trên xếp hạng
+    // Apply badge to profile image based on rank
     private void applyProfileFrame(int rank) {
         if (profileFrame == null) {
             Log.e("EditProfileActivity", "profileFrame is null");
@@ -427,9 +454,11 @@ public class EditProfileActivity extends BaseActivity {
         builder.setTitle("Chọn hình nền");
         builder.setItems(new String[]{"Mặc định (background5)", "Nhập hình nền tùy chỉnh"}, (dialog, which) -> {
             if (which == 0) {
+                // Apply default background and clear custom background
                 applyBackground(R.drawable.background5);
-                selectedBackgroundUri = null;
+                selectedBackgroundUri = null; // Indicate no custom background
             } else {
+                // Launch picker for custom background
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 backgroundPickerLauncher.launch(intent);
             }
@@ -479,7 +508,10 @@ public class EditProfileActivity extends BaseActivity {
     private void showColorPickerDialog() {
         new ColorPickerDialog.Builder(this)
                 .setTitle("Chọn màu chữ")
-                .setColorListener((ColorListener) (color, colorHex) -> applyTextColor(color))
+                .setColorListener((ColorListener) (color, colorHex) -> {
+                    selectedTextColor = color;
+                    applyTextColor(color);
+                })
                 .setPositiveButton(R.string.ok)
                 .setNegativeButton(R.string.cancel)
                 .build()
@@ -540,18 +572,73 @@ public class EditProfileActivity extends BaseActivity {
         user.put("height", height);
         user.put("healthCondition", healthCondition);
         user.put("waterGoal", waterGoal);
+        user.put("textColor", selectedTextColor); // Save text color
 
-        if (selectedImageUri != null) {
+        // Handle background image: remove backgroundImageUrl if default is selected
+        if (selectedBackgroundUri == null) {
+            user.put("backgroundImageUrl", FieldValue.delete()); // Remove custom background
+        }
+
+        // Handle profile image and background image uploads
+        if (selectedImageUri != null && selectedBackgroundUri != null) {
+            // Upload both profile and background images
+            uploadProfileAndBackgroundImages(selectedImageUri, selectedBackgroundUri, user);
+        } else if (selectedImageUri != null) {
+            // Upload only profile image
             uploadImageToStorage(selectedImageUri, user);
+        } else if (selectedBackgroundUri != null) {
+            // Upload only background image
+            uploadBackgroundImageToStorage(selectedBackgroundUri, user);
         } else {
+            // No images to upload, update Firestore directly
             updateFirestore(user);
         }
 
-        // Cập nhật lại xếp hạng sau khi update profile
+        // Update ranking
         checkUserRanking();
     }
 
+    private void uploadProfileAndBackgroundImages(Uri profileImageUri, Uri backgroundImageUri, Map<String, Object> user) {
+        if (auth.getCurrentUser() == null) {
+            Toast.makeText(this, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StorageReference storageRef = storage.getReference();
+        StorageReference profileImageRef = storageRef.child("profile_images/" + userId + "/profile.jpg");
+        StorageReference backgroundImageRef = storageRef.child("background_images/" + userId + "/background.jpg");
+
+        // Upload profile image
+        profileImageRef.putFile(profileImageUri).addOnSuccessListener(profileTaskSnapshot -> {
+            profileImageRef.getDownloadUrl().addOnSuccessListener(profileUri -> {
+                String profileDownloadUrl = profileUri.toString();
+                user.put("profileImageUrl", profileDownloadUrl);
+                user.put("profileImage", null);
+
+                // Upload background image
+                backgroundImageRef.putFile(backgroundImageUri).addOnSuccessListener(backgroundTaskSnapshot -> {
+                    backgroundImageRef.getDownloadUrl().addOnSuccessListener(backgroundUri -> {
+                        String backgroundDownloadUrl = backgroundUri.toString();
+                        user.put("backgroundImageUrl", backgroundDownloadUrl);
+                        updateFirestore(user);
+                    }).addOnFailureListener(e -> {
+                        Toast.makeText(this, "Lỗi lấy URL hình nền: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+                }).addOnFailureListener(e -> {
+                    Toast.makeText(this, "Lỗi tải hình nền lên: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }).addOnFailureListener(e -> {
+                Toast.makeText(this, "Lỗi lấy URL ảnh hồ sơ: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Lỗi tải ảnh hồ sơ lên: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
     private void uploadImageToStorage(Uri imageUri, Map<String, Object> user) {
+        if (auth.getCurrentUser() == null) {
+            Toast.makeText(this, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         StorageReference storageRef = storage.getReference();
         StorageReference profileImageRef = storageRef.child("profile_images/" + userId + "/profile.jpg");
 
@@ -566,6 +653,27 @@ public class EditProfileActivity extends BaseActivity {
             });
         }).addOnFailureListener(e -> {
             Toast.makeText(this, "Lỗi tải ảnh lên: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void uploadBackgroundImageToStorage(Uri backgroundImageUri, Map<String, Object> user) {
+        if (auth.getCurrentUser() == null) {
+            Toast.makeText(this, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StorageReference storageRef = storage.getReference();
+        StorageReference backgroundImageRef = storageRef.child("background_images/" + userId + "/background.jpg");
+
+        backgroundImageRef.putFile(backgroundImageUri).addOnSuccessListener(taskSnapshot -> {
+            backgroundImageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                String downloadUrl = uri.toString();
+                user.put("backgroundImageUrl", downloadUrl);
+                updateFirestore(user);
+            }).addOnFailureListener(e -> {
+                Toast.makeText(this, "Lỗi lấy URL hình nền: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Lỗi tải hình nền lên: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -612,6 +720,7 @@ public class EditProfileActivity extends BaseActivity {
                 !heightInput.getText().toString().isEmpty() ||
                 !healthConditionSpinner.getText().toString().isEmpty() ||
                 selectedImageUri != null ||
-                selectedBackgroundUri != null;
+                selectedBackgroundUri != null ||
+                selectedTextColor != 0xFFFFFFFF; // Check if text color has changed
     }
 }

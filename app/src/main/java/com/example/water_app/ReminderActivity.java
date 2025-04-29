@@ -15,12 +15,15 @@ import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 public class ReminderActivity extends BaseActivity {
 
     private SeekBar intervalSeekBar;
-    private TextView intervalText, reminderStatusText;
+    private TextView intervalText, reminderStatusText, currentDateText; // Added currentDateText
     private TimePicker startTimePicker, endTimePicker;
     private Button toggleReminderButton;
 
@@ -48,12 +51,16 @@ public class ReminderActivity extends BaseActivity {
         endTimePicker = findViewById(R.id.endTimePicker);
         reminderStatusText = findViewById(R.id.reminderStatusText);
         toggleReminderButton = findViewById(R.id.toggleReminderButton);
+        currentDateText = findViewById(R.id.currentDateText); // Initialize currentDateText
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         preferences = getSharedPreferences("ReminderPrefs", MODE_PRIVATE);
 
         // Setup Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Display current date
+        displayCurrentDate();
 
         // Load dữ liệu lưu trữ
         loadPreferences();
@@ -103,6 +110,16 @@ public class ReminderActivity extends BaseActivity {
                 audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
                 0
         );
+    }
+
+    private void displayCurrentDate() {
+        // Get current date
+        Date currentDate = new Date();
+        // Format date as DD/MM/YYYY
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        String formattedDate = dateFormat.format(currentDate);
+        // Set the formatted date to the TextView
+        currentDateText.setText(formattedDate);
     }
 
     private void setupIntervalSeekBar() {

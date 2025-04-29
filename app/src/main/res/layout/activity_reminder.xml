@@ -45,7 +45,16 @@
             android:textColor="#100F0F"
             android:textSize="22sp"
             android:textStyle="bold" />
-
+        <!--  ngày hiện tại-->
+        <TextView
+            android:id="@+id/currentDateText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:text="w"
+            android:textColor="#100F0F"
+            android:textSize="18sp" />
         <!-- Khoảng thời gian -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
