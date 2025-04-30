@@ -273,6 +273,7 @@ public class MainActivity extends BaseActivity {
         Button amount1000ml = dialogView.findViewById(R.id.amount1000ml);
         EditText customAmountInput = dialogView.findViewById(R.id.customAmountInput);
         Button confirmButton = dialogView.findViewById(R.id.confirmButton);
+        ImageButton closeButton = dialogView.findViewById(R.id.closeButton);
 
         final String[] selectedDrinkType = {"Nước lọc"};
         final double[] selectedAmount = {0};
@@ -309,6 +310,9 @@ public class MainActivity extends BaseActivity {
         });
 
         AlertDialog dialog = builder.create();
+
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+
         confirmButton.setOnClickListener(v -> {
             String customAmount = customAmountInput.getText().toString().trim();
             if (!customAmount.isEmpty()) {

@@ -7,12 +7,29 @@
     android:padding="16dp"
     android:background="#0277BD">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Chọn loại đồ uống"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chọn loại đồ uống"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:layout_centerVertical="true" />
+
+        <ImageButton
+            android:id="@+id/closeButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentEnd="true"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:contentDescription="Close dialog"
+            app:tint="#FFFFFF" />
+
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -41,8 +58,7 @@
                 <ImageView
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/ic_water5"
-                   />
+                    android:src="@drawable/ic_water5" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -73,8 +89,7 @@
                 <ImageView
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/ic_tea"
-                    />
+                    android:src="@drawable/ic_tea" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -105,8 +120,7 @@
                 <ImageView
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/ic_coffee"
-                   />
+                    android:src="@drawable/ic_coffee" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -137,8 +151,7 @@
                 <ImageView
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/ic_milk2"
-                   />
+                    android:src="@drawable/ic_milk2" />
 
                 <TextView
                     android:layout_width="wrap_content"
